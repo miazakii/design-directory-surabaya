@@ -1,0 +1,23 @@
+{
+  "name": "studio-desain-surabaya",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "description": "Kumpulkan 100 studio desain/branding di Surabaya (usia >= 2 tahun) via Apify Google Maps Scraper, hasilkan Excel.",
+  "engines": {
+    "node": ">=18"
+  },
+  "scripts": {
+    "start": "node src/index.js",
+    "scrape": "node src/index.js",
+    "demo": "OUTPUT_FILE=demo-surabaya.xlsx node src/index.js --input fixtures/sample-places.json",
+    "build:site": "node site/scripts/build-directory-data.js",
+    "serve:site": "python3 -m http.server 8000 --directory site",
+    "clean": "node -e \"import('node:fs').then((fs) => fs.rmSync('data', { recursive: true, force: true }))\""
+  },
+  "dependencies": {
+    "apify-client": "^2.11.2",
+    "dotenv": "^16.4.5",
+    "exceljs": "^4.4.0"
+  }
+}

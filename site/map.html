@@ -1,0 +1,58 @@
+<!doctype html>
+<html lang="id">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Peta · Design Directory Surabaya</title>
+  <meta name="description" content="Peta interaktif 100 studio dan agensi desain di Surabaya.">
+  <meta name="theme-color" content="#ffffff">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Host+Grotesk:wght@400;500;600;700&display=swap">
+  <link rel="stylesheet" href="https://unpkg.com/maplibre-gl@4.7.1/dist/maplibre-gl.css">
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+  <div class="app">
+    <aside class="app__sidebar">
+      <div class="app__topbar">
+        <button class="icon-btn" id="close-sidebar" type="button" aria-label="Tutup panel">✕</button>
+        <a class="brand" href="index.html">Design Directory <span>Surabaya</span></a>
+      </div>
+
+      <div class="app__search">
+        <input class="search-input" id="search" type="search" placeholder="Cari nama, kategori, alamat…" autocomplete="off">
+      </div>
+
+      <div class="app__filters" id="filters"></div>
+      <div class="app__count" id="count"></div>
+      <div class="app__list" id="list"></div>
+      <div class="app__foot">
+        <a href="privacy.html">Privasi &amp; Disclaimer</a>
+      </div>
+    </aside>
+
+    <main class="app__map">
+      <button class="icon-btn app__toggle" id="open-sidebar" type="button" aria-label="Buka panel">☰</button>
+      <div id="map"></div>
+    </main>
+  </div>
+
+  <dialog class="dialog" id="dialog">
+    <div class="dialog__inner">
+      <header class="dialog__head">
+        <div>
+          <div id="dialog-badges" style="display:flex; gap:6px; flex-wrap:wrap; margin-bottom:8px;"></div>
+          <h2 class="dialog__title" id="dialog-title"></h2>
+        </div>
+        <button class="icon-btn dialog__close" id="dialog-close" type="button" aria-label="Tutup">✕</button>
+      </header>
+      <div class="dialog__body" id="dialog-body"></div>
+    </div>
+  </dialog>
+
+  <script src="https://unpkg.com/maplibre-gl@4.7.1/dist/maplibre-gl.js"></script>
+  <script src="js/directory-data.js"></script>
+  <script src="js/app.js"></script>
+</body>
+</html>

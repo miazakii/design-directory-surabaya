@@ -1,0 +1,110 @@
+<!doctype html>
+<html lang="id">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Design Directory Surabaya</title>
+  <meta name="description" content="Direktori terbuka yang memetakan 100 studio dan agensi desain di Surabaya.">
+  <meta name="theme-color" content="#ffffff">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Host+Grotesk:wght@400;500;600;700&display=swap">
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+  <header class="landing-nav">
+    <div class="container landing-nav__inner">
+      <a class="brand" href="index.html">Design Directory <span>Surabaya</span></a>
+      <a class="btn btn--ghost" href="map.html">Buka Direktori</a>
+    </div>
+  </header>
+
+  <section class="landing-hero">
+    <div class="container">
+      <p class="landing-hero__kicker">Direktori Terbuka</p>
+      <h1 class="landing-hero__title">Peta ekosistem desain Surabaya.</h1>
+      <p class="landing-hero__sub">
+        Direktori ini memetakan studio, agensi, dan praktisi desain di Surabaya ke dalam satu peta
+        yang bisa dicari dan difilter — memperlihatkan siapa berada di mana, dan bagaimana mereka saling terhubung.
+      </p>
+      <div class="landing-hero__actions">
+        <a class="btn" href="map.html">Jelajahi Peta</a>
+        <a class="btn btn--ghost" href="#kategori">Lihat Kategori</a>
+      </div>
+    </div>
+  </section>
+
+  <div class="container">
+    <div class="stats" id="stats"></div>
+  </div>
+
+  <section class="section" id="kategori">
+    <div class="container">
+      <h2 class="section__title">Kategori</h2>
+      <div class="legend" id="legend"></div>
+    </div>
+  </section>
+
+  <section class="section about" id="tentang">
+    <div class="container about__grid">
+      <div>
+        <h2 class="section__title">Tentang direktori</h2>
+        <p>
+          Komunitas desain dibaca sebagai jaringan, bukan sekadar daftar. Studio, konsultan, biro iklan,
+          dan praktisi tampil bersamaan sehingga pembaca bisa melihat posisi mereka dan siapa yang berada di dekatnya.
+        </p>
+      </div>
+      <div>
+        <h2 class="section__title">Catatan data</h2>
+        <ul class="notes-list" id="notes"></ul>
+      </div>
+    </div>
+  </section>
+
+  <footer class="landing-footer">
+    <div class="container" style="display:flex; justify-content:space-between; gap:16px; flex-wrap:wrap;">
+      <span>Design Directory Surabaya — referensi terbuka.</span>
+      <span><a href="privacy.html" style="color:var(--muted);">Privasi &amp; Disclaimer</a> · <span id="generated"></span></span>
+    </div>
+  </footer>
+
+  <script src="js/directory-data.js"></script>
+  <script>
+    (() => {
+      const meta = window.DIRECTORY_META;
+      const data = window.DIRECTORY_DATA || [];
+
+      const groupCounts = new Map();
+      for (const studio of data) {
+        groupCounts.set(studio.group, (groupCounts.get(studio.group) || 0) + 1);
+      }
+
+      const stats = document.getElementById('stats');
+      const statItems = [
+        { value: meta.total, label: 'Studio & agensi terpetakan' },
+        { value: meta.groups.length, label: 'Kategori' },
+        { value: meta.verified, label: 'Usia terverifikasi (>= 2 tahun)' },
+      ];
+      stats.innerHTML = statItems.map((item) =>
+        `<div class="stat"><div class="stat__value">${item.value}</div><div class="stat__label">${item.label}</div></div>`,
+      ).join('');
+
+      const legend = document.getElementById('legend');
+      legend.innerHTML = meta.groups.map((group) => {
+        const count = groupCounts.get(group.key) || 0;
+        return `<a class="legend-item" href="map.html?group=${encodeURIComponent(group.key)}">
+          <span class="dot" style="background:${group.color}"></span>
+          <span class="legend-item__name">${group.label}</span>
+          <span class="legend-item__count">${count}</span>
+        </a>`;
+      }).join('');
+
+      const notes = document.getElementById('notes');
+      notes.innerHTML = meta.notes.map((note) => `<li>${note}</li>`).join('');
+
+      const generated = document.getElementById('generated');
+      generated.textContent = `Data: ${meta.total} studio · ${new Date(meta.generatedAt).toLocaleDateString('id-ID')}`;
+    })();
+  </script>
+</body>
+</html>

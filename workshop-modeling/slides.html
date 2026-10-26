@@ -1,0 +1,350 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>CITRA — Personal Branding & Kreatif Bisnis untuk Model</title>
+<style>
+  :root{
+    --bg:#151515;
+    --panel:#1f1f1f;
+    --text:#f3efe6;
+    --muted:#c9c2b4;
+    --gold:#d4af37;
+    --gold-dark:#b8912a;
+  }
+  *{box-sizing:border-box;}
+  html,body{height:100%;margin:0;}
+  body{
+    background:var(--bg);
+    color:var(--text);
+    font-family:"Segoe UI", Arial, sans-serif;
+    overflow:hidden;
+  }
+  .slide{
+    position:absolute;
+    inset:0;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    padding:6vh 7vw;
+    opacity:0;
+    visibility:hidden;
+    transition:opacity .35s ease;
+  }
+  .slide.active{opacity:1;visibility:visible;}
+  .inner{max-width:1050px;width:100%;}
+  .kicker{
+    color:var(--gold);
+    text-transform:uppercase;
+    letter-spacing:3px;
+    font-size:clamp(12px,1.6vw,16px);
+    font-weight:700;
+    margin:0 0 14px;
+  }
+  h1{font-size:clamp(30px,6.5vw,64px);line-height:1.05;margin:0 0 10px;font-weight:800;}
+  h2{font-size:clamp(26px,5vw,48px);line-height:1.1;margin:0 0 22px;font-weight:800;}
+  .sub{font-size:clamp(14px,2.2vw,20px);color:var(--muted);margin:0;}
+  ul{list-style:none;padding:0;margin:0;}
+  li{
+    font-size:clamp(16px,2.6vw,26px);
+    line-height:1.45;
+    padding-left:28px;
+    position:relative;
+    margin-bottom:12px;
+  }
+  li::before{
+    content:"";
+    position:absolute;left:0;top:.55em;
+    width:12px;height:12px;
+    background:var(--gold);
+    border-radius:2px;
+  }
+  .badge{
+    display:inline-block;
+    background:var(--gold);
+    color:#151515;
+    font-weight:800;
+    font-size:clamp(11px,1.5vw,14px);
+    padding:4px 12px;
+    border-radius:20px;
+    letter-spacing:1px;
+  }
+  .grid5{
+    display:grid;
+    grid-template-columns:repeat(5,1fr);
+    gap:14px;
+    margin-top:8px;
+  }
+  .cell{
+    background:var(--panel);
+    border:1px solid #333;
+    border-radius:12px;
+    padding:20px 16px;
+    text-align:center;
+  }
+  .cell .l{color:var(--gold);font-weight:800;font-size:clamp(28px,4.5vw,44px);}
+  .cell .t{font-size:clamp(12px,1.7vw,16px);color:var(--muted);margin-top:6px;font-weight:600;}
+  .activity{
+    background:var(--panel);
+    border-left:5px solid var(--gold);
+    border-radius:8px;
+    padding:18px 22px;
+    margin-top:14px;
+  }
+  .activity b{color:var(--gold);}
+  .activity p{font-size:clamp(14px,2.2vw,20px);margin:0;line-height:1.4;}
+  .two{display:grid;grid-template-columns:1fr 1fr;gap:28px;}
+  .two h3{font-size:clamp(18px,2.8vw,26px);margin:0 0 8px;color:var(--gold);}
+  .two p{font-size:clamp(14px,2.2vw,20px);color:var(--muted);margin:0;line-height:1.45;}
+  .nav{position:fixed;bottom:18px;right:22px;display:flex;gap:8px;z-index:10;}
+  .nav button{
+    background:var(--panel);color:var(--text);border:1px solid #444;
+    border-radius:6px;padding:8px 14px;cursor:pointer;font-size:14px;
+  }
+  .nav button:hover{border-color:var(--gold);}
+  #counter{position:fixed;bottom:18px;left:22px;color:var(--muted);font-size:14px;z-index:10;letter-spacing:1px;}
+  .prog{position:fixed;top:0;left:0;height:3px;background:var(--gold);z-index:11;transition:width .3s ease;}
+</style>
+</head>
+<body>
+<div class="prog" id="prog"></div>
+
+<div class="slides">
+
+  <section class="slide active">
+    <div class="inner">
+      <p class="kicker">Workshop Modeling Entrepreneurship · Surabaya</p>
+      <h1>CITRA</h1>
+      <p class="sub">Personal Branding &amp; Kreatif Bisnis untuk Model</p>
+    </div>
+  </section>
+
+  <section class="slide">
+    <div class="inner">
+      <p class="kicker">Tujuan</p>
+      <h2>Apa yang kamu dapat hari ini</h2>
+      <ul>
+        <li>Kenali dirimu &amp; identitasmu</li>
+        <li>Bangun personal branding di media sosial</li>
+        <li>Ubah skill jadi peluang &amp; pendapatan</li>
+        <li>Pulang dengan <b>Canvas CITRA</b> + rencana 30 hari</li>
+      </ul>
+    </div>
+  </section>
+
+  <section class="slide">
+    <div class="inner">
+      <p class="kicker">Mengapa penting</p>
+      <h2>Kenapa model butuh personal branding?</h2>
+      <ul>
+        <li>Pekerjaan modeling tidak selamanya</li>
+        <li>Branding = aset yang bertahan lama</li>
+        <li>Karier &amp; bisnis datang dari citra yang jelas</li>
+      </ul>
+    </div>
+  </section>
+
+  <section class="slide">
+    <div class="inner">
+      <p class="kicker">Kerangka</p>
+      <h2>Framework CITRA</h2>
+      <div class="grid5">
+        <div class="cell"><div class="l">C</div><div class="t">Karakter</div></div>
+        <div class="cell"><div class="l">I</div><div class="t">Identitas</div></div>
+        <div class="cell"><div class="l">T</div><div class="t">Tampil</div></div>
+        <div class="cell"><div class="l">R</div><div class="t">Relasi &amp; Revenue</div></div>
+        <div class="cell"><div class="l">A</div><div class="t">Aksi</div></div>
+      </div>
+      <p class="sub" style="margin-top:18px">"Citra" = gambar dirimu yang sengaja kamu bangun.</p>
+    </div>
+  </section>
+
+  <section class="slide">
+    <div class="inner">
+      <p class="kicker">Langkah C</p>
+      <h2>C — Karakter: Kenali Diri</h2>
+      <ul>
+        <li>Personal branding = citra yang <b>sengaja dibangun</b>, bukan kebetulan</li>
+        <li>Mulai dari dalam: karakter, kelebihan, minat, nilai, keunikan</li>
+      </ul>
+    </div>
+  </section>
+
+  <section class="slide">
+    <div class="inner">
+      <p class="kicker">Aktivitas · blok C</p>
+      <h2>Kenali Diri</h2>
+      <div class="activity">
+        <p><b>Isi blok C di worksheet:</b> 3 kata tentang dirimu, 1 nilai, kelebihan, dan minat.</p>
+      </div>
+    </div>
+  </section>
+
+  <section class="slide">
+    <div class="inner">
+      <p class="kicker">Langkah I</p>
+      <h2>I — Identitas: Ingin dikenal sebagai apa?</h2>
+      <ul>
+        <li>Tentukan persepsi yang ingin kamu bangun</li>
+        <li>Identitas = janji yang kamu jaga konsisten</li>
+      </ul>
+    </div>
+  </section>
+
+  <section class="slide">
+    <div class="inner">
+      <p class="kicker">Langkah I</p>
+      <h2>Keunikan &amp; Ciri Khas</h2>
+      <ul>
+        <li>Apa yang membedakanmu dari ribuan model lain?</li>
+        <li>Keunikan adalah <b>pembeda</b>, bukan sekadar beda</li>
+      </ul>
+    </div>
+  </section>
+
+  <section class="slide">
+    <div class="inner">
+      <p class="kicker">Aktivitas · blok I</p>
+      <h2>Identitas &amp; Keunikan</h2>
+      <div class="activity">
+        <p><b>Isi blok I:</b> "Aku ingin dikenal sebagai…" + keunikan &amp; ciri khasmu.</p>
+      </div>
+    </div>
+  </section>
+
+  <section class="slide">
+    <div class="inner">
+      <p class="kicker">Langkah T</p>
+      <h2>T — Tampil di Media Sosial</h2>
+      <ul>
+        <li>Konsisten di Instagram, TikTok, dan platform lain</li>
+        <li>Konten = cara kamu "berbicara" saat tidak hadir</li>
+      </ul>
+    </div>
+  </section>
+
+  <section class="slide">
+    <div class="inner">
+      <p class="kicker">Langkah T</p>
+      <h2>Identitas Visual</h2>
+      <ul>
+        <li>Gaya foto, video, warna, konsep, karakter konten</li>
+        <li>Orang harus mengenali kontenmu <b>tanpa melihat nama</b></li>
+      </ul>
+    </div>
+  </section>
+
+  <section class="slide">
+    <div class="inner">
+      <p class="kicker">Aktivitas · blok T</p>
+      <h2>Tampil</h2>
+      <div class="activity">
+        <p><b>Isi blok T:</b> platform utama, 3 tipe konten, gaya visual, jadwal posting.</p>
+      </div>
+    </div>
+  </section>
+
+  <section class="slide">
+    <div class="inner">
+      <p class="kicker">Langkah R</p>
+      <h2>R — Relasi &amp; Revenue: Ekonomi Kreatif</h2>
+      <ul>
+        <li>Industri kreatif = menjual kreativitas &amp; ide</li>
+        <li>Keahlian + kreativitas → nilai ekonomi</li>
+      </ul>
+    </div>
+  </section>
+
+  <section class="slide">
+    <div class="inner">
+      <p class="kicker">Langkah R</p>
+      <h2>Ubah Skill Jadi Pendapatan</h2>
+      <div class="two">
+        <div>
+          <h3>Dari ide ke bisnis</h3>
+          <p>Ide → produk/jasa → nilai jual</p>
+        </div>
+        <div>
+          <h3>Monetisasi</h3>
+          <p>Endorsement · produk · jasa · kolaborasi</p>
+        </div>
+      </div>
+      <p class="sub" style="margin-top:18px">Relasi &amp; kolaborasi membuka peluang baru.</p>
+    </div>
+  </section>
+
+  <section class="slide">
+    <div class="inner">
+      <p class="kicker">Aktivitas · blok R</p>
+      <h2>Relasi &amp; Revenue</h2>
+      <div class="activity">
+        <p><b>Isi blok R:</b> skill yang bisa dimonetisasi, ide produk/jasa, target pasar, 3 kolaborasi.</p>
+      </div>
+    </div>
+  </section>
+
+  <section class="slide">
+    <div class="inner">
+      <p class="kicker">Langkah A</p>
+      <h2>A — Aksi: Ciptakan Peluang</h2>
+      <ul>
+        <li>Jangan hanya mencari peluang — <b>ciptakan</b></li>
+        <li>Strategi konsisten + langkah kecil yang diulang</li>
+      </ul>
+    </div>
+  </section>
+
+  <section class="slide">
+    <div class="inner">
+      <p class="kicker">Aktivitas · blok A</p>
+      <h2>Aksi &amp; Elevator Pitch</h2>
+      <div class="activity">
+        <p><b>Isi blok A</b> + tulis elevator pitch 1 kalimat &amp; rencana 30 hari.</p>
+      </div>
+    </div>
+  </section>
+
+  <section class="slide">
+    <div class="inner">
+      <p class="kicker">Penutup</p>
+      <h2>Mulai dari satu langkah</h2>
+      <ul>
+        <li>Branding kuat = karier &amp; bisnis berkelanjutan</li>
+        <li>Jangan menunggu peluang — ciptakan minggu ini</li>
+      </ul>
+      <p class="sub" style="margin-top:20px">Terima kasih · konsisten 30 hari 🚀</p>
+    </div>
+  </section>
+
+</div>
+
+<div id="counter">1 / 18</div>
+<div class="nav">
+  <button id="prev">‹ Sebelumnya</button>
+  <button id="next">Berikutnya ›</button>
+</div>
+
+<script>
+  const slides = document.querySelectorAll('.slide');
+  let i = 0;
+  function show(n){
+    slides[i].classList.remove('active');
+    i = (n + slides.length) % slides.length;
+    slides[i].classList.add('active');
+    document.getElementById('counter').textContent = (i+1) + ' / ' + slides.length;
+    document.getElementById('prog').style.width = ((i+1)/slides.length*100) + '%';
+  }
+  document.addEventListener('keydown', function(e){
+    if(e.key === 'ArrowRight' || e.key === 'PageDown' || e.key === ' ') { e.preventDefault(); show(i+1); }
+    else if(e.key === 'ArrowLeft' || e.key === 'PageUp') { e.preventDefault(); show(i-1); }
+    else if(e.key === 'Home') show(0);
+    else if(e.key === 'End') show(slides.length-1);
+    else if(e.key === 'f' || e.key === 'F') { if(document.fullscreenElement){document.exitFullscreen();} else {document.documentElement.requestFullscreen();} }
+  });
+  document.getElementById('next').onclick = function(){ show(i+1); };
+  document.getElementById('prev').onclick = function(){ show(i-1); };
+  show(0);
+</script>
+</body>
+</html>
