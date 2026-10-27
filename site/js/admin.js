@@ -1,6 +1,7 @@
 (() => {
   const API = 'https://api.github.com';
   const DATA_PATH = 'site/data/directory.json';
+  const LOCAL = location.hostname === 'localhost' || location.hostname === '127.0.0.1' || new URLSearchParams(location.search).has('local');
 
   const state = {
     token: sessionStorage.getItem('admin_token') || '',
@@ -123,6 +124,13 @@
   }
 
   async function loadData() {
+    if (LOCAL) {
+      const res = await fetch('/api/directory');
+      if (!res.ok) throw new Error(`Server lokal: ${res.status} ${res.statusText}`);
+      const json = await res.json();
+      state.data = json.data;
+      return;
+    }
     const res = await gh(`/repos/${state.owner}/${state.repo}/contents/${DATA_PATH}`);
     state.data = JSON.parse(base64Utf8(res.content));
     state.sha = res.sha;
@@ -249,16 +257,29 @@
     saveStatus.className = '';
 
     try {
-      const res = await gh(`/repos/${state.owner}/${state.repo}/contents/${DATA_PATH}`, {
-        method: 'PUT',
-        body: JSON.stringify({
-          message: 'Update directory data',
-          content: utf8Base64(json),
-          sha: state.sha,
-        }),
-      });
-      state.sha = res.content.sha;
-      saveStatus.textContent = 'Tersimpan ✓';
+      if (LOCAL) {
+        const res = await fetch('/api/directory', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: json,
+        });
+        if (!res.ok) {
+          const body = await res.json().catch(() => ({}));
+          throw new Error(body.error || `${res.status} ${res.statusText}`);
+        }
+        saveStatus.textContent = 'Tersimpan & di-push ✓';
+      } else {
+        const res = await gh(`/repos/${state.owner}/${state.repo}/contents/${DATA_PATH}`, {
+          method: 'PUT',
+          body: JSON.stringify({
+            message: 'Update directory data',
+            content: utf8Base64(json),
+            sha: state.sha,
+          }),
+        });
+        state.sha = res.content.sha;
+        saveStatus.textContent = 'Tersimpan ✓';
+      }
       saveStatus.className = 'admin-status-ok';
     } catch (error) {
       saveStatus.textContent = `Gagal: ${error.message}`;
@@ -386,6 +407,17 @@
   repoInput.value = state.repo;
 
   (async () => {
+    if (LOCAL) {
+      try {
+        await loadData();
+        showEditor();
+      } catch (error) {
+        loginView.hidden = false;
+        loginError.textContent = `Gagal memuat dari server lokal. Pastikan Anda menjalankan \`npm run admin\` lalu buka http://localhost:8787/admin.html — ${error.message}`;
+      }
+      return;
+    }
+
     if (!state.token) {
       loginView.hidden = false;
       return;

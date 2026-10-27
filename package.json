@@ -13,6 +13,7 @@
     "demo": "OUTPUT_FILE=demo-surabaya.xlsx node src/index.js --input fixtures/sample-places.json",
     "build:site": "node site/scripts/build-directory-data.js",
     "serve:site": "python3 -m http.server 8000 --directory site",
+    "admin": "node admin-server.mjs",
     "clean": "node -e \"import('node:fs').then((fs) => fs.rmSync('data', { recursive: true, force: true }))\""
   },
   "dependencies": {
