@@ -87,7 +87,6 @@
     const { method = 'GET', body, token = state.token } = opts;
     const headers = {
       Accept: 'application/vnd.github+json',
-      'X-GitHub-Api-Version': '2022-11-28',
       Authorization: `Bearer ${token}`,
     };
     if (body) headers['Content-Type'] = 'application/json';
@@ -108,6 +107,9 @@
 
   function friendlyError(error) {
     const message = error.message || '';
+    if (message.includes('Failed to fetch')) {
+      return 'Koneksi ke api.github.com gagal. Coba: pastikan terhubung internet, nonaktifkan ad-blocker/ekstensi privasi, atau pakai browser lain.';
+    }
     if (message.includes('401')) {
       return 'Token tidak valid atau sudah kedaluwarsa. Periksa kembali token-nya.';
     }
