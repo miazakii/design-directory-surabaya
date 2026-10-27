@@ -106,6 +106,20 @@
     return res.status === 204 ? null : res.json();
   }
 
+  function friendlyError(error) {
+    const message = error.message || '';
+    if (message.includes('401')) {
+      return 'Token tidak valid atau sudah kedaluwarsa. Periksa kembali token-nya.';
+    }
+    if (message.includes('403')) {
+      return 'Token tidak punya akses ke repo ini. Pastikan fine-grained token diberikan ke repository design-directory-surabaya dengan izin "Contents: Read and write" (atau classic token dengan scope repo).';
+    }
+    if (message.includes('404')) {
+      return 'File data atau repo tidak ditemukan. Periksa kolom Owner dan Repo.';
+    }
+    return `Gagal masuk: ${message}`;
+  }
+
   async function loadData() {
     const res = await gh(`/repos/${state.owner}/${state.repo}/contents/${DATA_PATH}`);
     state.data = JSON.parse(base64Utf8(res.content));
@@ -259,18 +273,19 @@
     const owner = ownerInput.value.trim() || 'miazakii';
     const repo = repoInput.value.trim() || 'design-directory-surabaya';
 
+    state.token = token;
+    state.owner = owner;
+    state.repo = repo;
+
     try {
-      await gh('/user', { token });
+      await loadData();
       sessionStorage.setItem('admin_token', token);
       sessionStorage.setItem('admin_owner', owner);
       sessionStorage.setItem('admin_repo', repo);
-      state.token = token;
-      state.owner = owner;
-      state.repo = repo;
-      await loadData();
       showEditor();
     } catch (error) {
-      loginError.textContent = `Gagal masuk: ${error.message}`;
+      state.token = '';
+      loginError.textContent = friendlyError(error);
     }
   });
 
@@ -379,7 +394,7 @@
     } catch (error) {
       sessionStorage.removeItem('admin_token');
       loginView.hidden = false;
-      loginError.textContent = `Sesi berakhir atau gagal memuat data: ${error.message}`;
+      loginError.textContent = friendlyError(error);
     }
   })();
 })();
