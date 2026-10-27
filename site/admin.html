@@ -1,0 +1,82 @@
+<!doctype html>
+<html lang="id">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Admin · Design Directory Surabaya</title>
+  <meta name="robots" content="noindex, nofollow">
+  <meta name="theme-color" content="#ffffff">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Host+Grotesk:wght@400;500;600;700&display=swap">
+  <link rel="stylesheet" href="css/style.css">
+  <link rel="stylesheet" href="css/admin.css">
+</head>
+<body>
+  <!-- Login -->
+  <div id="login-view" class="admin-login">
+    <form id="login-form" class="admin-login__card">
+      <h1>Admin <span>Direktori</span></h1>
+      <p class="admin-login__hint">
+        Masuk dengan <strong>GitHub Personal Access Token</strong> yang punya izin menulis isi repo
+        (fine-grained: <em>Contents → Read and write</em>, atau classic: scope <code>repo</code>).
+        Token hanya disimpan di browser Anda selama sesi ini.
+      </p>
+      <label for="token-input">Token</label>
+      <input id="token-input" type="password" autocomplete="off" required>
+      <label for="owner-input">Owner</label>
+      <input id="owner-input" type="text" value="miazakii" required>
+      <label for="repo-input">Repo</label>
+      <input id="repo-input" type="text" value="design-directory-surabaya" required>
+      <button class="btn" type="submit">Masuk</button>
+      <p id="login-error" class="admin-error"></p>
+      <p class="admin-login__help">
+        Belum punya token? Buat di
+        <a href="https://github.com/settings/tokens" target="_blank" rel="noopener noreferrer">github.com/settings/tokens</a>.
+      </p>
+    </form>
+  </div>
+
+  <!-- Editor -->
+  <div id="editor-view" class="admin-editor" hidden>
+    <header class="admin-topbar">
+      <span class="brand">Admin <span>Direktori</span></span>
+      <div class="admin-topbar__actions">
+        <span id="save-status"></span>
+        <button id="save-btn" class="btn" type="button">Simpan Perubahan</button>
+        <button id="logout-btn" class="btn btn--ghost" type="button">Keluar</button>
+      </div>
+    </header>
+
+    <div class="admin-tabs">
+      <button class="admin-tab is-active" type="button" data-tab="studios">Studio</button>
+      <button class="admin-tab" type="button" data-tab="categories">Kategori &amp; Catatan</button>
+    </div>
+
+    <div id="tab-studios" class="admin-panel admin-panel--studios">
+      <aside class="admin-sidebar">
+        <input id="admin-search" class="search-input" type="search" placeholder="Cari studio…" autocomplete="off">
+        <button id="add-btn" class="btn btn--ghost" type="button">+ Tambah Studio</button>
+        <div id="admin-list" class="admin-list"></div>
+      </aside>
+      <section class="admin-form-wrap">
+        <div id="admin-form"></div>
+      </section>
+    </div>
+
+    <div id="tab-categories" class="admin-panel" hidden>
+      <section class="admin-form-wrap">
+        <h2>Kategori &amp; Legend</h2>
+        <p class="admin-hint">Ubah nama, warna, atau hapus kategori. Studio yang kategorinya dihapus akan tampil sebagai "Lainnya".</p>
+        <div id="groups-editor"></div>
+
+        <h2 style="margin-top:32px;">Catatan data (landing)</h2>
+        <p class="admin-hint">Satu catatan per baris.</p>
+        <textarea id="notes-editor" rows="6"></textarea>
+      </section>
+    </div>
+  </div>
+
+  <script src="js/admin.js"></script>
+</body>
+</html>

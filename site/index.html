@@ -68,29 +68,34 @@
     </div>
   </footer>
 
-  <script src="js/directory-data.js"></script>
   <script>
-    (() => {
-      const meta = window.DIRECTORY_META;
-      const data = window.DIRECTORY_DATA || [];
+    (async () => {
+      const res = await fetch('data/directory.json');
+      const json = await res.json();
+      const studios = json.studios || [];
+      const groups = json.groups || [];
 
       const groupCounts = new Map();
-      for (const studio of data) {
+      for (const studio of studios) {
         groupCounts.set(studio.group, (groupCounts.get(studio.group) || 0) + 1);
       }
 
+      const verified = studios.filter(
+        (studio) => studio.ageStatus === 'Usia terverifikasi (>= 2 tahun)',
+      ).length;
+
       const stats = document.getElementById('stats');
       const statItems = [
-        { value: meta.total, label: 'Studio & agensi terpetakan' },
-        { value: meta.groups.length, label: 'Kategori' },
-        { value: meta.verified, label: 'Usia terverifikasi (>= 2 tahun)' },
+        { value: studios.length, label: 'Studio & agensi terpetakan' },
+        { value: groups.length, label: 'Kategori' },
+        { value: verified, label: 'Usia terverifikasi (>= 2 tahun)' },
       ];
       stats.innerHTML = statItems.map((item) =>
         `<div class="stat"><div class="stat__value">${item.value}</div><div class="stat__label">${item.label}</div></div>`,
       ).join('');
 
       const legend = document.getElementById('legend');
-      legend.innerHTML = meta.groups.map((group) => {
+      legend.innerHTML = groups.map((group) => {
         const count = groupCounts.get(group.key) || 0;
         return `<a class="legend-item" href="map.html?group=${encodeURIComponent(group.key)}">
           <span class="dot" style="background:${group.color}"></span>
@@ -100,10 +105,10 @@
       }).join('');
 
       const notes = document.getElementById('notes');
-      notes.innerHTML = meta.notes.map((note) => `<li>${note}</li>`).join('');
+      notes.innerHTML = (json.notes || []).map((note) => `<li>${note}</li>`).join('');
 
       const generated = document.getElementById('generated');
-      generated.textContent = `Data: ${meta.total} studio · ${new Date(meta.generatedAt).toLocaleDateString('id-ID')}`;
+      generated.textContent = `Data: ${studios.length} studio · ${new Date(json.generatedAt).toLocaleDateString('id-ID')}`;
     })();
   </script>
 </body>

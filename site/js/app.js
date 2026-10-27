@@ -1,6 +1,12 @@
-(() => {
-  const meta = window.DIRECTORY_META;
-  const data = window.DIRECTORY_DATA || [];
+(async () => {
+  const res = await fetch('data/directory.json');
+  const json = await res.json();
+  const studios = json.studios || [];
+  const groups = json.groups || [];
+
+  const groupByKey = new Map(groups.map((group) => [group.key, group]));
+  const fallbackGroup = { key: 'other', label: 'Lainnya', color: '#8D99AE' };
+  const groupInfo = (studio) => groupByKey.get(studio.group) || fallbackGroup;
 
   const mapEl = document.getElementById('map');
   const searchEl = document.getElementById('search');
@@ -19,7 +25,7 @@
   let query = '';
 
   const initialGroup = new URLSearchParams(window.location.search).get('group');
-  if (meta.groups.some((group) => group.key === initialGroup)) {
+  if (groups.some((group) => group.key === initialGroup)) {
     activeGroup = initialGroup;
   }
 
@@ -55,7 +61,7 @@
     customAttribution: '© <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> · © <a href="https://openfreemap.org">OpenFreeMap</a>',
   }), 'bottom-right');
 
-  const features = data
+  const features = studios
     .filter((studio) => studio.latitude != null && studio.longitude != null)
     .map((studio) => ({
       type: 'Feature',
@@ -63,8 +69,8 @@
       properties: {
         id: studio.id,
         name: studio.name,
-        color: studio.groupColor,
-        groupLabel: studio.groupLabel,
+        color: groupInfo(studio).color,
+        groupLabel: groupInfo(studio).label,
       },
     }));
 
@@ -90,7 +96,7 @@
 
     map.on('click', 'studios', (event) => {
       const feature = event.features[0];
-      const studio = data.find((entry) => entry.id === feature.properties.id);
+      const studio = studios.find((entry) => entry.id === feature.properties.id);
       if (studio) openDetail(studio);
       map.flyTo({ center: feature.geometry.coordinates, zoom: 15 });
     });
@@ -111,10 +117,10 @@
 
   function buildFilters() {
     const counts = new Map();
-    data.forEach((studio) => counts.set(studio.group, (counts.get(studio.group) || 0) + 1));
+    studios.forEach((studio) => counts.set(studio.group, (counts.get(studio.group) || 0) + 1));
 
-    const chips = [{ key: null, label: 'Semua', color: '#171615', count: data.length }]
-      .concat(meta.groups.map((group) => ({ ...group, count: counts.get(group.key) || 0 })));
+    const chips = [{ key: null, label: 'Semua', color: '#171615', count: studios.length }]
+      .concat(groups.map((group) => ({ ...group, count: counts.get(group.key) || 0 })));
 
     filtersEl.innerHTML = chips.map((chip) => {
       const active = activeGroup === chip.key ? ' is-active' : '';
@@ -128,7 +134,7 @@
   function matches(studio) {
     if (activeGroup && studio.group !== activeGroup) return false;
     if (query) {
-      const hay = `${studio.name} ${studio.category} ${studio.groupLabel} ${studio.address} ${studio.city} ${studio.sourceKeyword}`.toLowerCase();
+      const hay = `${studio.name} ${studio.category} ${groupInfo(studio).label} ${studio.address} ${studio.city} ${studio.sourceKeyword}`.toLowerCase();
       if (!hay.includes(query)) return false;
     }
     return true;
@@ -146,7 +152,7 @@
 
     return `<button class="list-item" type="button" data-id="${esc(studio.id)}">
       <div class="list-item__top">
-        <span class="dot" style="background:${studio.groupColor}"></span>
+        <span class="dot" style="background:${groupInfo(studio).color}"></span>
         <span class="list-item__name">${esc(studio.name)}</span>
       </div>
       <div class="list-item__meta">${metaBits}</div>
@@ -155,8 +161,8 @@
   }
 
   function renderList() {
-    const filtered = data.filter(matches);
-    countEl.textContent = `Menampilkan ${filtered.length} dari ${data.length} studio`;
+    const filtered = studios.filter(matches);
+    countEl.textContent = `Menampilkan ${filtered.length} dari ${studios.length} studio`;
     listEl.innerHTML = filtered.length
       ? filtered.map(itemHtml).join('')
       : '<div class="list-empty">Tidak ada studio yang cocok.</div>';
@@ -169,8 +175,9 @@
   }
 
   function openDetail(studio) {
+    const info = groupInfo(studio);
     const badges = [];
-    badges.push(`<span class="badge"><span class="dot" style="background:${studio.groupColor}"></span>${esc(studio.groupLabel)}</span>`);
+    badges.push(`<span class="badge"><span class="dot" style="background:${info.color}"></span>${esc(info.label)}</span>`);
     if (studio.needsReview) badges.push('<span class="badge badge--warn">Perlu verifikasi manual</span>');
     if (studio.outsideSurabaya) badges.push('<span class="badge badge--error">Di luar Surabaya</span>');
 
@@ -187,11 +194,11 @@
       studio.mapsUrl ? link(studio.mapsUrl, 'Google Maps') : '',
     ].filter(Boolean).join('');
 
-    const emails = studio.emails.length
+    const emails = (studio.emails || []).length
       ? studio.emails.map((email) => `<a href="mailto:${esc(email)}">${esc(email)}</a>`).join('')
       : '';
 
-    const hours = studio.openingHours.length
+    const hours = (studio.openingHours || []).length
       ? `<ul class="hours">${studio.openingHours.map((slot) => {
           const [day, ...rest] = slot.split(': ');
           const time = rest.join(': ');
@@ -210,7 +217,7 @@
     dialogBody.innerHTML = `
       <section class="detail-section">
         <h3>Ringkasan</h3>
-        <div class="detail-row"><dt>Kategori</dt><dd>${esc(studio.category || studio.groupLabel)}</dd></div>
+        <div class="detail-row"><dt>Kategori</dt><dd>${esc(studio.category || info.label)}</dd></div>
         <div class="detail-row"><dt>Rating</dt><dd>${ratingText(studio) || 'Belum ada rating'}</dd></div>
       </section>
 
@@ -259,7 +266,7 @@
   listEl.addEventListener('click', (event) => {
     const item = event.target.closest('.list-item');
     if (!item) return;
-    const studio = data.find((entry) => entry.id === item.dataset.id);
+    const studio = studios.find((entry) => entry.id === item.dataset.id);
     if (!studio) return;
     if (studio.latitude != null && studio.longitude != null) {
       map.flyTo({ center: [studio.longitude, studio.latitude], zoom: 15 });
