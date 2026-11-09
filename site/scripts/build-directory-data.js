@@ -5,7 +5,21 @@ import { fileURLToPath } from 'node:url';
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const ROOT = path.resolve(__dirname, '..', '..');
 const CSV_PATH = path.join(ROOT, 'data', 'studio-desain-surabaya.csv');
-const OUT_PATH = path.join(ROOT, 'site', 'data', 'directory.json');
+
+const args = process.argv.slice(2);
+const force = args.includes('--force');
+const resetMetadata = args.includes('--reset-metadata');
+const outIndex = args.indexOf('--out');
+const outValue = outIndex >= 0 ? args[outIndex + 1] : '';
+
+if (outIndex >= 0 && (!outValue || outValue.startsWith('--'))) {
+  console.error('Opsi --out membutuhkan path file.');
+  process.exit(1);
+}
+
+const OUT_PATH = outValue
+  ? path.resolve(outValue)
+  : path.join(ROOT, 'site', 'data', 'directory.json');
 
 const CSV_DELIMITER = ';';
 
@@ -157,8 +171,29 @@ function normalizeRow(raw, index) {
   };
 }
 
+function readExistingMetadata(filePath) {
+  try {
+    const existing = JSON.parse(fs.readFileSync(filePath, 'utf8'));
+    return {
+      groups: Array.isArray(existing.groups) ? existing.groups : null,
+      notes: Array.isArray(existing.notes) ? existing.notes : null,
+    };
+  } catch {
+    return { groups: null, notes: null };
+  }
+}
+
+function backupExisting(filePath) {
+  const backupDir = path.join(path.dirname(filePath), 'backups');
+  const stamp = new Date().toISOString().replace(/[:.]/g, '-');
+  const backupPath = path.join(backupDir, `directory-${stamp}.json`);
+  fs.mkdirSync(backupDir, { recursive: true });
+  fs.copyFileSync(filePath, backupPath);
+  return backupPath;
+}
+
 function main() {
-  const text = fs.readFileSync(CSV_PATH, 'utf8');
+  const text = fs.readFileSync(CSV_PATH, 'utf8').replace(/^\uFEFF/, '');
   const rows = parseDelimited(text, CSV_DELIMITER);
 
   if (rows.length < 2) {
@@ -166,6 +201,28 @@ function main() {
   }
 
   const headers = rows[0].map((header) => header.trim());
+  const requiredHeaders = ['Nama Studio', 'Kategori Utama', 'Place ID'];
+  const missingHeaders = requiredHeaders.filter((header) => !headers.includes(header));
+  if (missingHeaders.length > 0) {
+    throw new Error(`Header CSV tidak lengkap: ${missingHeaders.join(', ')}`);
+  }
+
+  const exists = fs.existsSync(OUT_PATH);
+  if (exists && !force) {
+    console.error(`File ${path.relative(ROOT, OUT_PATH)} sudah ada.`);
+    console.error('Script ini tidak menimpa data website secara otomatis.');
+    console.error('Jika memang ingin rebuild dari CSV, jalankan: npm run import:csv');
+    console.error('Atau: node site/scripts/build-directory-data.js --force');
+    process.exitCode = 1;
+    return;
+  }
+
+  const existingMeta = exists ? readExistingMetadata(OUT_PATH) : { groups: null, notes: null };
+  if (exists) {
+    const backupPath = backupExisting(OUT_PATH);
+    console.log(`Backup data lama: ${path.relative(ROOT, backupPath)}`);
+  }
+
   const records = [];
 
   for (let i = 1; i < rows.length; i += 1) {
@@ -183,8 +240,8 @@ function main() {
   const payload = {
     title: 'Design Directory Surabaya',
     generatedAt: new Date().toISOString(),
-    groups: GROUPS,
-    notes: DATA_NOTES,
+    groups: (!resetMetadata && existingMeta.groups) || GROUPS,
+    notes: (!resetMetadata && existingMeta.notes) || DATA_NOTES,
     studios: records,
   };
 

@@ -63,6 +63,29 @@ node src/index.js --input data/raw-run1.json,data/raw-run2.json
 
 Proses ulang tidak memanggil Apify dan memakai cache enrichment di `data/enrich-cache.json`, jadi hasilnya konsisten dan cepat (tidak menghajar Wayback Machine/RDAP berulang kali).
 
+## Website & admin lokal
+
+`site/data/directory.json` adalah **sumber data kanonis website**. Admin lokal mengedit file ini, bukan CSV.
+
+```bash
+npm run admin
+# buka URL lengkap dengan #t=... yang dicetak di terminal
+```
+
+- Server hanya bind ke `127.0.0.1` dan API membutuhkan token.
+- Token dibuat otomatis dan disimpan di `.admin-token` (mode `0600`, gitignored).
+- Simpan perubahan akan commit **hanya** `site/data/directory.json`.
+- Push ke `origin main` aktif secara default. Set `ADMIN_AUTO_PUSH=false` untuk commit lokal saja.
+- `ADMIN_PORT` mengganti port, `ADMIN_TOKEN` memakai token sendiri (minimal 16 karakter).
+
+`npm run build:site` tidak menimpa data website secara otomatis. Untuk rebuild eksplisit dari CSV:
+
+```bash
+npm run import:csv
+```
+
+Perintah impor membuat backup di `site/data/backups/` dan mempertahankan `groups`/`notes` yang sudah diedit lewat admin. Gunakan `--reset-metadata` jika ingin mengembalikan keduanya ke default dari script. Data CSV/Excel pipeline adalah sumber impor, bukan sumber kanonis website.
+
 ## Opsi CLI
 
 | Opsi | Fungsi |
@@ -97,7 +120,7 @@ Ubah daftarnya di `src/config.js` (`relevance.include` / `relevance.exclude`). K
 ## Kalau target 100 belum terpenuhi
 
 1. Tambah keyword di `config.searchStrings` (mis. `desain interior`, `packaging designer`, `agency digital`).
-2. Naikkan `--max-per-search` (default 120; actor menyarankan jangan gabung lokasi ke keyword).
+2. Naikkan `--max-per-search` (default 40; actor menyarankan jangan gabung lokasi ke keyword).
 3. Aktifkan review (`MAX_REVIEWS`) agar sinyal usia lebih banyak — ini yang paling berpengaruh.
 4. Pakai sheet `Semua Kandidat` untuk mengambil baris berstatus "Perlu cek manual" yang ingin diverifikasi manual.
 

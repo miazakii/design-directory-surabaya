@@ -70,6 +70,15 @@
 
   <script>
     (async () => {
+      const esc = (value) => String(value ?? '').replace(/[&<>"']/g, (char) => ({
+        '&': '&amp;',
+        '<': '&lt;',
+        '>': '&gt;',
+        '"': '&quot;',
+        "'": '&#39;',
+      }[char]));
+      const safeColor = (value) => (/^#[0-9a-f]{6}$/i.test(String(value || '')) ? value : '#8D99AE');
+
       const res = await fetch('data/directory.json');
       const json = await res.json();
       const studios = json.studios || [];
@@ -91,21 +100,21 @@
         { value: verified, label: 'Usia terverifikasi (>= 2 tahun)' },
       ];
       stats.innerHTML = statItems.map((item) =>
-        `<div class="stat"><div class="stat__value">${item.value}</div><div class="stat__label">${item.label}</div></div>`,
+        `<div class="stat"><div class="stat__value">${esc(item.value)}</div><div class="stat__label">${esc(item.label)}</div></div>`,
       ).join('');
 
       const legend = document.getElementById('legend');
       legend.innerHTML = groups.map((group) => {
         const count = groupCounts.get(group.key) || 0;
         return `<a class="legend-item" href="map.html?group=${encodeURIComponent(group.key)}">
-          <span class="dot" style="background:${group.color}"></span>
-          <span class="legend-item__name">${group.label}</span>
+          <span class="dot" style="background:${safeColor(group.color)}"></span>
+          <span class="legend-item__name">${esc(group.label)}</span>
           <span class="legend-item__count">${count}</span>
         </a>`;
       }).join('');
 
       const notes = document.getElementById('notes');
-      notes.innerHTML = (json.notes || []).map((note) => `<li>${note}</li>`).join('');
+      notes.innerHTML = (json.notes || []).map((note) => `<li>${esc(note)}</li>`).join('');
 
       const generated = document.getElementById('generated');
       generated.textContent = `Data: ${studios.length} studio · ${new Date(json.generatedAt).toLocaleDateString('id-ID')}`;

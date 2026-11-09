@@ -4,3 +4,5 @@ node_modules/
 .DS_Store
 *.log
 .commandcode/
+.admin-token
+/site/data/backups/

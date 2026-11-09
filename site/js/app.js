@@ -39,6 +39,10 @@
     }[char]));
   }
 
+  function safeColor(value) {
+    return /^#[0-9a-f]{6}$/i.test(String(value || '')) ? value : '#8D99AE';
+  }
+
   function safeUrl(url) {
     if (!url) return '#';
     const trimmed = String(url).trim();
@@ -69,7 +73,7 @@
       properties: {
         id: studio.id,
         name: studio.name,
-        color: groupInfo(studio).color,
+        color: safeColor(groupInfo(studio).color),
         groupLabel: groupInfo(studio).label,
       },
     }));
@@ -125,7 +129,7 @@
     filtersEl.innerHTML = chips.map((chip) => {
       const active = activeGroup === chip.key ? ' is-active' : '';
       return `<button class="chip${active}" type="button" data-group="${esc(chip.key ?? '')}">
-        ${chip.color ? `<span class="dot" style="background:${chip.color}"></span>` : ''}${esc(chip.label)}
+        ${chip.color ? `<span class="dot" style="background:${safeColor(chip.color)}"></span>` : ''}${esc(chip.label)}
         <span style="color:${chip.color ? 'inherit' : '#9b948d'}">${chip.count}</span>
       </button>`;
     }).join('');
@@ -141,8 +145,11 @@
   }
 
   function ratingText(studio) {
-    if (studio.rating == null) return '';
-    return `★ ${studio.rating.toFixed(1).replace('.', ',')} (${studio.reviews})`;
+    if (studio.rating == null || studio.rating === '') return '';
+    const rating = Number(studio.rating);
+    if (!Number.isFinite(rating)) return '';
+    const reviews = Number.isFinite(Number(studio.reviews)) ? Number(studio.reviews) : 0;
+    return `★ ${rating.toFixed(1).replace('.', ',')} (${reviews})`;
   }
 
   function itemHtml(studio) {
@@ -152,7 +159,7 @@
 
     return `<button class="list-item" type="button" data-id="${esc(studio.id)}">
       <div class="list-item__top">
-        <span class="dot" style="background:${groupInfo(studio).color}"></span>
+        <span class="dot" style="background:${safeColor(groupInfo(studio).color)}"></span>
         <span class="list-item__name">${esc(studio.name)}</span>
       </div>
       <div class="list-item__meta">${metaBits}</div>
@@ -177,7 +184,7 @@
   function openDetail(studio) {
     const info = groupInfo(studio);
     const badges = [];
-    badges.push(`<span class="badge"><span class="dot" style="background:${info.color}"></span>${esc(info.label)}</span>`);
+    badges.push(`<span class="badge"><span class="dot" style="background:${safeColor(info.color)}"></span>${esc(info.label)}</span>`);
     if (studio.needsReview) badges.push('<span class="badge badge--warn">Perlu verifikasi manual</span>');
     if (studio.outsideSurabaya) badges.push('<span class="badge badge--error">Di luar Surabaya</span>');
 
@@ -208,9 +215,9 @@
 
     const age = [
       `<div class="detail-row"><dt>Status</dt><dd>${esc(studio.ageStatus || '—')}</dd></div>`,
-      `<div class="detail-row"><dt>Skor keyakinan</dt><dd>${studio.confidence}%</dd></div>`,
-      studio.foundedYear ? `<div class="detail-row"><dt>Tahun berdiri</dt><dd>${studio.foundedYear}</dd></div>` : '',
-      studio.ageYears != null ? `<div class="detail-row"><dt>Usia</dt><dd>${String(studio.ageYears).replace('.', ',')} tahun</dd></div>` : '',
+      `<div class="detail-row"><dt>Skor keyakinan</dt><dd>${esc(studio.confidence ?? 0)}%</dd></div>`,
+      studio.foundedYear ? `<div class="detail-row"><dt>Tahun berdiri</dt><dd>${esc(studio.foundedYear)}</dd></div>` : '',
+      studio.ageYears != null ? `<div class="detail-row"><dt>Usia</dt><dd>${esc(String(studio.ageYears).replace('.', ','))} tahun</dd></div>` : '',
       studio.ageSummary ? `<div class="detail-row"><dt>Sinyal usia</dt><dd>${esc(studio.ageSummary)}</dd></div>` : '',
     ].filter(Boolean).join('');
 
@@ -218,7 +225,7 @@
       <section class="detail-section">
         <h3>Ringkasan</h3>
         <div class="detail-row"><dt>Kategori</dt><dd>${esc(studio.category || info.label)}</dd></div>
-        <div class="detail-row"><dt>Rating</dt><dd>${ratingText(studio) || 'Belum ada rating'}</dd></div>
+        <div class="detail-row"><dt>Rating</dt><dd>${esc(ratingText(studio)) || 'Belum ada rating'}</dd></div>
       </section>
 
       <section class="detail-section">

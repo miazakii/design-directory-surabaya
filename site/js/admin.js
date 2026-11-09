@@ -3,8 +3,20 @@
   const DATA_PATH = 'site/data/directory.json';
   const LOCAL = location.hostname === 'localhost' || location.hostname === '127.0.0.1' || new URLSearchParams(location.search).has('local');
 
+  function readAdminToken() {
+    const hash = new URLSearchParams(location.hash.replace(/^#/, ''));
+    const fromHash = hash.get('t') || hash.get('token') || '';
+    if (fromHash) {
+      sessionStorage.setItem('admin_local_token', fromHash);
+      history.replaceState(null, '', location.pathname + location.search);
+      return fromHash;
+    }
+    return sessionStorage.getItem('admin_local_token') || '';
+  }
+
   const state = {
     token: sessionStorage.getItem('admin_token') || '',
+    adminToken: readAdminToken(),
     owner: sessionStorage.getItem('admin_owner') || 'miazakii',
     repo: sessionStorage.getItem('admin_repo') || 'design-directory-surabaya',
     data: null,
@@ -19,6 +31,7 @@
   const ownerInput = document.getElementById('owner-input');
   const repoInput = document.getElementById('repo-input');
   const loginError = document.getElementById('login-error');
+  const localHelp = document.getElementById('local-help');
   const saveBtn = document.getElementById('save-btn');
   const logoutBtn = document.getElementById('logout-btn');
   const saveStatus = document.getElementById('save-status');
@@ -71,6 +84,10 @@
     }[char]));
   }
 
+  function safeColor(value) {
+    return /^#[0-9a-f]{6}$/i.test(String(value || '')) ? value : '#8D99AE';
+  }
+
   function utf8Base64(str) {
     const bytes = new TextEncoder().encode(str);
     let binary = '';
@@ -108,11 +125,13 @@
 
   function friendlyError(error) {
     const message = error.message || '';
+    if (message.includes('401') || message.includes('Token admin')) {
+      return LOCAL
+        ? 'Token admin lokal tidak valid. Buka lagi URL lengkap dengan #t=... yang dicetak di terminal saat `npm run admin`.'
+        : 'Token tidak valid atau sudah kedaluwarsa. Periksa kembali token-nya.';
+    }
     if (message.includes('Failed to fetch')) {
       return 'Koneksi ke api.github.com gagal. Coba: pastikan terhubung internet, nonaktifkan ad-blocker/ekstensi privasi, atau pakai browser lain.';
-    }
-    if (message.includes('401')) {
-      return 'Token tidak valid atau sudah kedaluwarsa. Periksa kembali token-nya.';
     }
     if (message.includes('403')) {
       return 'Token tidak punya akses ke repo ini. Pastikan fine-grained token diberikan ke repository design-directory-surabaya dengan izin "Contents: Read and write" (atau classic token dengan scope repo).';
@@ -125,8 +144,13 @@
 
   async function loadData() {
     if (LOCAL) {
-      const res = await fetch('/api/directory');
-      if (!res.ok) throw new Error(`Server lokal: ${res.status} ${res.statusText}`);
+      const res = await fetch('/api/directory', {
+        headers: { 'X-Admin-Token': state.adminToken },
+      });
+      if (!res.ok) {
+        const body = await res.json().catch(() => ({}));
+        throw new Error(body.error || `Server lokal: ${res.status} ${res.statusText}`);
+      }
       const json = await res.json();
       state.data = json.data;
       return;
@@ -226,7 +250,7 @@
     return [...groupsEditor.querySelectorAll('.group-row')].map((row) => ({
       key: row.querySelector('.group-key').value.trim() || 'other',
       label: row.querySelector('.group-label').value.trim() || 'Kategori',
-      color: row.querySelector('.group-color').value || '#8D99AE',
+      color: safeColor(row.querySelector('.group-color').value),
     }));
   }
 
@@ -260,14 +284,25 @@
       if (LOCAL) {
         const res = await fetch('/api/directory', {
           method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
+          headers: {
+            'Content-Type': 'application/json',
+            'X-Admin-Token': state.adminToken,
+          },
           body: json,
         });
         if (!res.ok) {
           const body = await res.json().catch(() => ({}));
-          throw new Error(body.error || `${res.status} ${res.statusText}`);
+          const details = Array.isArray(body.details) ? ` ${body.details.join(' ')}` : '';
+          throw new Error((body.error || `${res.status} ${res.statusText}`) + details);
         }
-        saveStatus.textContent = 'Tersimpan & di-push ✓';
+        const result = await res.json().catch(() => ({}));
+        if (!result.committed) {
+          saveStatus.textContent = 'Tidak ada perubahan untuk disimpan.';
+        } else if (result.pushed) {
+          saveStatus.textContent = 'Tersimpan, di-commit & di-push ✓';
+        } else {
+          saveStatus.textContent = 'Tersimpan & di-commit (push nonaktif)';
+        }
       } else {
         const res = await gh(`/repos/${state.owner}/${state.repo}/contents/${DATA_PATH}`, {
           method: 'PUT',
@@ -408,16 +443,29 @@
 
   (async () => {
     if (LOCAL) {
+      if (!state.adminToken) {
+        loginView.hidden = false;
+        loginForm.hidden = true;
+        localHelp.hidden = false;
+        localHelp.textContent = 'Token admin lokal belum ada. Buka URL lengkap dengan #t=... yang dicetak di terminal saat `npm run admin`.';
+        return;
+      }
       try {
         await loadData();
+        localHelp.hidden = true;
         showEditor();
       } catch (error) {
+        sessionStorage.removeItem('admin_local_token');
         loginView.hidden = false;
-        loginError.textContent = `Gagal memuat dari server lokal. Pastikan Anda menjalankan \`npm run admin\` lalu buka http://localhost:8787/admin.html — ${error.message}`;
+        loginForm.hidden = true;
+        localHelp.hidden = false;
+        localHelp.textContent = `Gagal memuat dari server lokal. Jalankan \`npm run admin\` lalu buka URL dengan token yang dicetak — ${friendlyError(error)}`;
       }
       return;
     }
 
+    loginForm.hidden = false;
+    localHelp.hidden = true;
     if (!state.token) {
       loginView.hidden = false;
       return;

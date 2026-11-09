@@ -1,0 +1,59 @@
+name: Koreksi atau Penghapusan Data
+description: Laporkan data studio yang perlu dikoreksi atau dihapus dari direktori.
+title: "[Koreksi Data] "
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Terima kasih sudah membantu menjaga akurasi direktori. Isi nama studio dan detail perubahan.
+        Jika permintaan bersifat sensitif, jangan cantumkan data pribadi di issue ini; tulis bahwa Anda
+        ingin dihubungi secara privat.
+
+  - type: input
+    id: studio
+    attributes:
+      label: Nama studio
+      placeholder: Contoh: Studio Desain Contoh
+    validations:
+      required: true
+
+  - type: input
+    id: url
+    attributes:
+      label: Link studio di direktori
+      description: Tempel URL halaman peta/detail jika ada.
+      placeholder: https://miazakii.github.io/design-directory-surabaya/map.html?studio=...
+
+  - type: dropdown
+    id: jenis
+    attributes:
+      label: Jenis permintaan
+      options:
+        - Koreksi data
+        - Penghapusan data
+        - Perubahan kontak
+        - Lainnya
+    validations:
+      required: true
+
+  - type: textarea
+    id: detail
+    attributes:
+      label: Detail permintaan
+      description: Jelaskan data yang salah, data yang benar, atau alasan penghapusan.
+    validations:
+      required: true
+
+  - type: textarea
+    id: bukti
+    attributes:
+      label: Bukti atau tautan pendukung
+      description: Opsional. Contoh: website resmi, akun sosial media, atau dokumen pendukung.
+
+  - type: checkboxes
+    id: konfirmasi
+    attributes:
+      label: Konfirmasi
+      options:
+        - label: Saya berwenang atau mewakili studio ini, atau saya melaporkan data yang dapat diverifikasi.
+          required: true
