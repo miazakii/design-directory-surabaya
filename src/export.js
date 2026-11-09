@@ -1,7 +1,7 @@
 import path from 'node:path';
 import fs from 'node:fs/promises';
 import ExcelJS from 'exceljs';
-import { AGE_STATUS, AGE_ORDER } from './age.js';
+import { AGE_STATUS, AGE_ORDER, ageStatusLabel } from './age.js';
 
 const HEADER_FILL = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF1F3864' } };
 const HEADER_FONT = { bold: true, color: { argb: 'FFFFFFFF' }, size: 11 };
@@ -51,6 +51,7 @@ const CANDIDATE_COLUMNS = [
   { header: 'Lolos Filter Relevansi', key: 'relevant', width: 18 },
   { header: 'Istilah Cocok', key: 'matched', width: 26 },
   { header: 'Istilah Dikecualikan', key: 'excluded', width: 26 },
+  { header: 'Alasan Relevansi', key: 'reason', width: 34 },
   { header: 'Masuk Daftar Utama', key: 'selected', width: 17 },
   { header: 'Status Usia', key: 'ageStatus', width: 26 },
   { header: 'Skor Keyakinan', key: 'confidence', width: 14 },
@@ -153,7 +154,7 @@ function studioRow(place, index) {
     longitude: place.longitude ?? '',
     mapsUrl: link(place.mapsUrl),
     placeId: place.placeId,
-    ageStatus: place.age.status,
+    ageStatus: place.age.statusLabel ?? ageStatusLabel(place.age.status),
     confidence: place.age.confidence,
     foundedYear: place.age.foundedYear ?? '',
     ageYears: place.age.ageYears ?? '',
@@ -177,8 +178,9 @@ function candidateRow(place, index, selectedIds) {
     relevant: place.relevance?.ok ? 'Ya' : 'Tidak',
     matched: joined(place.relevance?.matched),
     excluded: joined(place.relevance?.excluded),
+    reason: place.relevance?.reason ?? '',
     selected: selectedIds.has(place.placeId || `${place.name}|${place.address}`) ? 'Ya' : 'Tidak',
-    ageStatus: place.age?.status ?? '',
+    ageStatus: place.age?.statusLabel ?? (place.age?.status ? ageStatusLabel(place.age.status) : ''),
     confidence: place.age?.confidence ?? '',
     ageSummary: ageSummary(place.age?.signals),
     closed: place.closed ? 'Ya' : 'Tidak',
@@ -274,10 +276,10 @@ export async function exportWorkbook(context) {
     { metric: 'Lolos filter relevansi & belum tutup', value: relevant.length },
     { metric: 'Target studio', value: targetCount },
     { metric: 'Batas usia minimum (tahun)', value: minYears },
-    { metric: `Usia terverifikasi (>= ${minYears} tahun)`, value: counts[AGE_STATUS.VERIFIED] ?? 0 },
-    { metric: 'Perlu cek manual', value: counts[AGE_STATUS.MANUAL] ?? 0 },
-    { metric: 'Tidak dapat dipastikan', value: counts[AGE_STATUS.UNKNOWN] ?? 0 },
-    { metric: `Kemungkinan < ${minYears} tahun (dibuang)`, value: counts[AGE_STATUS.YOUNG] ?? 0 },
+    { metric: ageStatusLabel(AGE_STATUS.VERIFIED, minYears), value: counts[AGE_STATUS.VERIFIED] ?? 0 },
+    { metric: ageStatusLabel(AGE_STATUS.MANUAL, minYears), value: counts[AGE_STATUS.MANUAL] ?? 0 },
+    { metric: ageStatusLabel(AGE_STATUS.UNKNOWN, minYears), value: counts[AGE_STATUS.UNKNOWN] ?? 0 },
+    { metric: `${ageStatusLabel(AGE_STATUS.YOUNG, minYears)} (dibuang)`, value: counts[AGE_STATUS.YOUNG] ?? 0 },
     { metric: 'Jumlah baris di sheet Studio', value: finalList.length },
     { metric: `Baris terverifikasi usia (>= ${minYears} tahun)`, value: verifiedInFinal },
     {
@@ -302,6 +304,7 @@ export async function exportWorkbook(context) {
     { metric: 'Dataset ID', value: runMeta.datasetId },
     { metric: 'Max place per keyword', value: runMeta.maxPlacesPerSearch ?? '' },
     { metric: 'Max review per place', value: runMeta.maxReviewsPerPlace ?? '' },
+    { metric: 'Urutan review', value: runMeta.reviewsSort ?? '-' },
     { metric: 'Biaya run (USD)', value: runMeta.costUsd ?? '-' },
     { metric: 'Batas biaya (USD)', value: runMeta.maxTotalChargeUsd ?? '-' },
     { metric: 'Enrichment kontak Apify', value: runMeta.contactsEnrichment ? 'Aktif' : 'Nonaktif' },

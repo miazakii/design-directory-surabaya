@@ -13,7 +13,7 @@ body:
     id: studio
     attributes:
       label: Nama studio
-      placeholder: Contoh: Studio Desain Contoh
+      placeholder: "Contoh: Studio Desain Contoh"
     validations:
       required: true
 
@@ -48,7 +48,7 @@ body:
     id: bukti
     attributes:
       label: Bukti atau tautan pendukung
-      description: Opsional. Contoh: website resmi, akun sosial media, atau dokumen pendukung.
+      description: "Opsional. Contoh: website resmi, akun sosial media, atau dokumen pendukung."
 
   - type: checkboxes
     id: konfirmasi

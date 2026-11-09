@@ -79,25 +79,43 @@
       }[char]));
       const safeColor = (value) => (/^#[0-9a-f]{6}$/i.test(String(value || '')) ? value : '#8D99AE');
 
-      const res = await fetch('data/directory.json');
-      const json = await res.json();
+      let json;
+      try {
+        const res = await fetch('data/directory.json', { cache: 'no-cache' });
+        if (!res.ok) throw new Error(`HTTP ${res.status} ${res.statusText}`);
+        json = await res.json();
+      } catch (error) {
+        const stats = document.getElementById('stats');
+        if (stats) {
+          stats.innerHTML = '<div class="stat"><div class="stat__value">!</div><div class="stat__label">Gagal memuat data direktori</div></div>';
+        }
+        const notes = document.getElementById('notes');
+        if (notes) {
+          notes.innerHTML = '<li>Data tidak dapat dimuat. Periksa koneksi lalu muat ulang halaman.</li>';
+        }
+        console.error(error);
+        return;
+      }
+
       const studios = json.studios || [];
       const groups = json.groups || [];
+      const minYears = Number(json.minYears) || 2;
+      const isVerified = (studio) =>
+        studio.ageStatusCode === 'verified' ||
+        String(studio.ageStatus || '').startsWith('Usia terverifikasi');
 
       const groupCounts = new Map();
       for (const studio of studios) {
         groupCounts.set(studio.group, (groupCounts.get(studio.group) || 0) + 1);
       }
 
-      const verified = studios.filter(
-        (studio) => studio.ageStatus === 'Usia terverifikasi (>= 2 tahun)',
-      ).length;
+      const verified = studios.filter(isVerified).length;
 
       const stats = document.getElementById('stats');
       const statItems = [
         { value: studios.length, label: 'Studio & agensi terpetakan' },
         { value: groups.length, label: 'Kategori' },
-        { value: verified, label: 'Usia terverifikasi (>= 2 tahun)' },
+        { value: verified, label: `Usia terverifikasi (>= ${minYears} tahun)` },
       ];
       stats.innerHTML = statItems.map((item) =>
         `<div class="stat"><div class="stat__value">${esc(item.value)}</div><div class="stat__label">${esc(item.label)}</div></div>`,

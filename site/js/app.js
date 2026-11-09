@@ -1,16 +1,8 @@
 (async () => {
-  const res = await fetch('data/directory.json');
-  const json = await res.json();
-  const studios = json.studios || [];
-  const groups = json.groups || [];
-
-  const groupByKey = new Map(groups.map((group) => [group.key, group]));
-  const fallbackGroup = { key: 'other', label: 'Lainnya', color: '#8D99AE' };
-  const groupInfo = (studio) => groupByKey.get(studio.group) || fallbackGroup;
-
   const mapEl = document.getElementById('map');
   const searchEl = document.getElementById('search');
   const filtersEl = document.getElementById('filters');
+  const quickFiltersEl = document.getElementById('quick-filters');
   const countEl = document.getElementById('count');
   const listEl = document.getElementById('list');
   const dialog = document.getElementById('dialog');
@@ -21,10 +13,44 @@
   const openSidebar = document.getElementById('open-sidebar');
   const closeSidebar = document.getElementById('close-sidebar');
 
+  function showLoadError(error) {
+    const message = 'Data direktori tidak dapat dimuat. Periksa koneksi lalu muat ulang halaman.';
+    if (countEl) countEl.textContent = 'Gagal memuat data.';
+    if (listEl) listEl.innerHTML = `<div class="list-empty">${message}</div>`;
+    console.error(error);
+  }
+
+  let json;
+  try {
+    const res = await fetch('data/directory.json', { cache: 'no-cache' });
+    if (!res.ok) throw new Error(`HTTP ${res.status} ${res.statusText}`);
+    json = await res.json();
+  } catch (error) {
+    showLoadError(error);
+    return;
+  }
+
+  const studios = Array.isArray(json.studios) ? json.studios : [];
+  const groups = Array.isArray(json.groups) ? json.groups : [];
+  const minYears = Number(json.minYears) || 2;
+
+  const groupByKey = new Map(groups.map((group) => [group.key, group]));
+  const fallbackGroup = { key: 'other', label: 'Lainnya', color: '#8D99AE' };
+  const groupInfo = (studio) => groupByKey.get(studio.group) || fallbackGroup;
+
+  const params = new URLSearchParams(window.location.search);
+  const initialGroup = params.get('group');
+  const initialStudioId = params.get('studio');
+  const initialStudio = initialStudioId
+    ? studios.find((studio) => studio.id === initialStudioId)
+    : null;
+
   let activeGroup = null;
   let query = '';
+  let verifiedOnly = params.get('verified') === '1';
+  let hasContactOnly = params.get('contact') === '1';
+  let currentStudioId = initialStudio ? initialStudio.id : null;
 
-  const initialGroup = new URLSearchParams(window.location.search).get('group');
   if (groups.some((group) => group.key === initialGroup)) {
     activeGroup = initialGroup;
   }
@@ -51,6 +77,40 @@
     return '#';
   }
 
+  function isVerified(studio) {
+    return (
+      studio.ageStatusCode === 'verified' ||
+      String(studio.ageStatus || '').startsWith('Usia terverifikasi')
+    );
+  }
+
+  function hasContact(studio) {
+    return Boolean(
+      studio.phone ||
+        studio.website ||
+        studio.instagram ||
+        studio.facebook ||
+        studio.linkedin ||
+        studio.youtube ||
+        (Array.isArray(studio.emails) && studio.emails.length > 0),
+    );
+  }
+
+  const hasCoords = (studio) => studio.latitude != null && studio.longitude != null;
+
+  function toFeature(studio) {
+    return {
+      type: 'Feature',
+      geometry: { type: 'Point', coordinates: [Number(studio.longitude), Number(studio.latitude)] },
+      properties: {
+        id: studio.id,
+        name: studio.name || '',
+        color: safeColor(groupInfo(studio).color),
+        groupLabel: groupInfo(studio).label,
+      },
+    };
+  }
+
   const map = new maplibregl.Map({
     container: mapEl,
     style: 'https://tiles.openfreemap.org/styles/positron',
@@ -65,37 +125,107 @@
     customAttribution: '© <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> · © <a href="https://openfreemap.org">OpenFreeMap</a>',
   }), 'bottom-right');
 
-  const features = studios
-    .filter((studio) => studio.latitude != null && studio.longitude != null)
-    .map((studio) => ({
-      type: 'Feature',
-      geometry: { type: 'Point', coordinates: [studio.longitude, studio.latitude] },
-      properties: {
-        id: studio.id,
-        name: studio.name,
-        color: safeColor(groupInfo(studio).color),
-        groupLabel: groupInfo(studio).label,
-      },
-    }));
-
   const hoverPopup = new maplibregl.Popup({ closeButton: false, closeOnClick: false, offset: 12 });
+
+  function matches(studio) {
+    if (activeGroup && studio.group !== activeGroup) return false;
+    if (verifiedOnly && !isVerified(studio)) return false;
+    if (hasContactOnly && !hasContact(studio)) return false;
+    if (query) {
+      const hay = `${studio.name} ${studio.category} ${groupInfo(studio).label} ${studio.address} ${studio.city} ${studio.sourceKeyword}`.toLowerCase();
+      if (!hay.includes(query)) return false;
+    }
+    return true;
+  }
+
+  function visibleStudios() {
+    return studios.filter(matches);
+  }
+
+  function featureCollection() {
+    return {
+      type: 'FeatureCollection',
+      features: visibleStudios().filter(hasCoords).map(toFeature),
+    };
+  }
+
+  function updateMapData() {
+    const source = map.getSource('studios');
+    if (source) source.setData(featureCollection());
+  }
+
+  function syncUrl() {
+    const next = new URLSearchParams(window.location.search);
+    if (activeGroup) next.set('group', activeGroup);
+    else next.delete('group');
+    if (currentStudioId) next.set('studio', currentStudioId);
+    else next.delete('studio');
+    if (verifiedOnly) next.set('verified', '1');
+    else next.delete('verified');
+    if (hasContactOnly) next.set('contact', '1');
+    else next.delete('contact');
+
+    const queryString = next.toString();
+    history.replaceState(null, '', `${window.location.pathname}${queryString ? `?${queryString}` : ''}`);
+  }
 
   map.on('load', () => {
     map.addSource('studios', {
       type: 'geojson',
-      data: { type: 'FeatureCollection', features },
+      data: featureCollection(),
+      cluster: true,
+      clusterMaxZoom: 14,
+      clusterRadius: 50,
+    });
+
+    map.addLayer({
+      id: 'clusters',
+      type: 'circle',
+      source: 'studios',
+      filter: ['has', 'point_count'],
+      paint: {
+        'circle-color': ['step', ['get', 'point_count'], '#E63946', 10, '#E76F51', 50, '#9B5DE5'],
+        'circle-radius': ['step', ['get', 'point_count'], 16, 10, 21, 50, 27],
+        'circle-stroke-width': 2,
+        'circle-stroke-color': '#ffffff',
+        'circle-opacity': 0.92,
+      },
+    });
+
+    map.addLayer({
+      id: 'cluster-count',
+      type: 'symbol',
+      source: 'studios',
+      filter: ['has', 'point_count'],
+      layout: {
+        'text-field': ['get', 'point_count_abbreviated'],
+        'text-font': ['Noto Sans Regular'],
+        'text-size': 12,
+      },
+      paint: { 'text-color': '#ffffff' },
     });
 
     map.addLayer({
       id: 'studios',
       type: 'circle',
       source: 'studios',
+      filter: ['!', ['has', 'point_count']],
       paint: {
         'circle-radius': 7,
         'circle-color': ['get', 'color'],
         'circle-stroke-width': 2,
         'circle-stroke-color': '#ffffff',
       },
+    });
+
+    map.on('click', 'clusters', (event) => {
+      const feature = event.features[0];
+      const source = map.getSource('studios');
+      if (!source) return;
+      source.getClusterExpansionZoom(feature.properties.cluster_id, (error, zoom) => {
+        if (error) return;
+        map.easeTo({ center: feature.geometry.coordinates, zoom });
+      });
     });
 
     map.on('click', 'studios', (event) => {
@@ -117,6 +247,26 @@
       map.getCanvas().style.cursor = '';
       hoverPopup.remove();
     });
+
+    map.on('mouseenter', 'clusters', (event) => {
+      map.getCanvas().style.cursor = 'pointer';
+      hoverPopup
+        .setLngLat(event.features[0].geometry.coordinates)
+        .setHTML(`${Number(event.features[0].properties.point_count) || 0} studio`)
+        .addTo(map);
+    });
+
+    map.on('mouseleave', 'clusters', () => {
+      map.getCanvas().style.cursor = '';
+      hoverPopup.remove();
+    });
+
+    if (initialStudio && hasCoords(initialStudio)) {
+      map.flyTo({
+        center: [Number(initialStudio.longitude), Number(initialStudio.latitude)],
+        zoom: 15,
+      });
+    }
   });
 
   function buildFilters() {
@@ -128,20 +278,25 @@
 
     filtersEl.innerHTML = chips.map((chip) => {
       const active = activeGroup === chip.key ? ' is-active' : '';
-      return `<button class="chip${active}" type="button" data-group="${esc(chip.key ?? '')}">
+      return `<button class="chip${active}" type="button" data-group="${esc(chip.key ?? '')}" aria-pressed="${activeGroup === chip.key}">
         ${chip.color ? `<span class="dot" style="background:${safeColor(chip.color)}"></span>` : ''}${esc(chip.label)}
         <span style="color:${chip.color ? 'inherit' : '#9b948d'}">${chip.count}</span>
       </button>`;
     }).join('');
   }
 
-  function matches(studio) {
-    if (activeGroup && studio.group !== activeGroup) return false;
-    if (query) {
-      const hay = `${studio.name} ${studio.category} ${groupInfo(studio).label} ${studio.address} ${studio.city} ${studio.sourceKeyword}`.toLowerCase();
-      if (!hay.includes(query)) return false;
-    }
-    return true;
+  function buildQuickFilters() {
+    const verifiedCount = studios.filter(isVerified).length;
+    const contactCount = studios.filter(hasContact).length;
+
+    quickFiltersEl.innerHTML = `
+      <button class="quick-chip${verifiedOnly ? ' is-active' : ''}" type="button" data-filter="verified" aria-pressed="${verifiedOnly}" title="Usia terverifikasi (>= ${esc(minYears)} tahun)">
+        Terverifikasi <span>${verifiedCount}</span>
+      </button>
+      <button class="quick-chip${hasContactOnly ? ' is-active' : ''}" type="button" data-filter="contact" aria-pressed="${hasContactOnly}">
+        Punya kontak <span>${contactCount}</span>
+      </button>
+    `;
   }
 
   function ratingText(studio) {
@@ -168,7 +323,7 @@
   }
 
   function renderList() {
-    const filtered = studios.filter(matches);
+    const filtered = visibleStudios();
     countEl.textContent = `Menampilkan ${filtered.length} dari ${studios.length} studio`;
     listEl.innerHTML = filtered.length
       ? filtered.map(itemHtml).join('')
@@ -181,7 +336,7 @@
     return `<a href="${esc(href)}" target="_blank" rel="noopener noreferrer">${esc(label)}</a>`;
   }
 
-  function openDetail(studio) {
+  function openDetail(studio, options = {}) {
     const info = groupInfo(studio);
     const badges = [];
     badges.push(`<span class="badge"><span class="dot" style="background:${safeColor(info.color)}"></span>${esc(info.label)}</span>`);
@@ -190,6 +345,8 @@
 
     dialogBadges.innerHTML = badges.join('');
     dialogTitle.textContent = studio.name;
+    currentStudioId = studio.id;
+    if (options.updateUrl !== false) syncUrl();
 
     const contactLinks = [
       studio.phone ? link(`tel:${studio.phone}`, studio.phone) : '',
@@ -207,7 +364,7 @@
 
     const hours = (studio.openingHours || []).length
       ? `<ul class="hours">${studio.openingHours.map((slot) => {
-          const [day, ...rest] = slot.split(': ');
+          const [day, ...rest] = String(slot).split(': ');
           const time = rest.join(': ');
           return `<li><span>${esc(day)}</span><span>${esc(time)}</span></li>`;
         }).join('')}</ul>`
@@ -253,7 +410,7 @@
       </section>
     `;
 
-    dialog.showModal();
+    if (!dialog.open) dialog.showModal();
   }
 
   filtersEl.addEventListener('click', (event) => {
@@ -261,13 +418,29 @@
     if (!chip) return;
     const group = chip.dataset.group || null;
     activeGroup = group === activeGroup ? null : group;
+    currentStudioId = null;
     buildFilters();
     renderList();
+    updateMapData();
+    syncUrl();
+  });
+
+  quickFiltersEl.addEventListener('click', (event) => {
+    const button = event.target.closest('.quick-chip');
+    if (!button) return;
+    if (button.dataset.filter === 'verified') verifiedOnly = !verifiedOnly;
+    if (button.dataset.filter === 'contact') hasContactOnly = !hasContactOnly;
+    currentStudioId = null;
+    buildQuickFilters();
+    renderList();
+    updateMapData();
+    syncUrl();
   });
 
   searchEl.addEventListener('input', () => {
     query = searchEl.value.trim().toLowerCase();
     renderList();
+    updateMapData();
   });
 
   listEl.addEventListener('click', (event) => {
@@ -275,8 +448,8 @@
     if (!item) return;
     const studio = studios.find((entry) => entry.id === item.dataset.id);
     if (!studio) return;
-    if (studio.latitude != null && studio.longitude != null) {
-      map.flyTo({ center: [studio.longitude, studio.latitude], zoom: 15 });
+    if (hasCoords(studio)) {
+      map.flyTo({ center: [Number(studio.longitude), Number(studio.latitude)], zoom: 15 });
     }
     openDetail(studio);
     if (window.innerWidth <= 860) document.body.classList.remove('sidebar-open');
@@ -286,10 +459,17 @@
   dialog.addEventListener('click', (event) => {
     if (event.target === dialog) dialog.close();
   });
+  dialog.addEventListener('close', () => {
+    currentStudioId = null;
+    syncUrl();
+  });
 
   openSidebar.addEventListener('click', () => document.body.classList.add('sidebar-open'));
   closeSidebar.addEventListener('click', () => document.body.classList.remove('sidebar-open'));
 
   buildFilters();
+  buildQuickFilters();
   renderList();
+  syncUrl();
+  if (initialStudio) openDetail(initialStudio, { updateUrl: false });
 })();

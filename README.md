@@ -10,17 +10,19 @@ Google Places/Maps **tidak menyediakan tanggal berdiri**. Jadi usia tidak bisa d
 
 | Sinyal | Cara ambil | Bobot | Arti |
 | --- | --- | --- | --- |
-| Review Google tertua | `reviews[].publishedAtDate` dari actor (butuh `maxReviews > 0`) | 30 | Tempat itu sudah menerima review sejak tanggal tsb |
+| Review tertua dalam sampel | `reviews[].publishedAtDate` dari actor (butuh `maxReviews > 0`) | 30 | Tempat itu sudah menerima review setidaknya sejak tanggal tsb |
 | Arsip website | Wayback Machine CDX API (gratis) | 35 | Domain aktif & terarsip sejak tanggal tsb |
 | Registrasi domain | RDAP `rdap.org` (gratis) | 25 | Domain didaftarkan pada tanggal tsb |
 | Copyright website | Regex footer halaman utama | 10 | Tahun copyright paling awal di website |
 
 Semua sinyal bersifat **"sudah ada setidaknya sejak X"**. Sinyal paling awal dipakai sebagai batas bawah usia.
 
-**Status usia:**
+Catatan penting: actor mengambil review dengan urutan **terbaru** (`reviewsSort: newest`). Jadi sinyal review adalah review tertua **di dalam sampel**, bukan review pertama sepanjang sejarah tempat tersebut. Sinyal ini tetap valid sebagai batas bawah aktivitas, tetapi bisa membuat usia studio terdeteksi lebih muda dari yang sebenarnya.
 
-- `Usia terverifikasi (>= 2 tahun)` — ada minimal satu sinyal yang lebih tua dari batas cutoff.
-- `Kemungkinan < 2 tahun` — >= 2 sinyal ada tapi semuanya lebih baru dari cutoff (dan mencakup wayback/domain). Dibuang dari daftar utama.
+**Status usia** (label mengikuti `MIN_YEARS`, default 2):
+
+- `Usia terverifikasi (>= N tahun)` — ada minimal satu sinyal yang lebih tua dari batas cutoff.
+- `Kemungkinan < N tahun` — >= 2 sinyal ada tapi semuanya lebih baru dari cutoff (dan mencakup wayback/domain). Dibuang dari daftar utama.
 - `Perlu cek manual` — ada sinyal, tapi tidak ada yang cukup tua untuk membuktikan.
 - `Tidak dapat dipastikan` — tidak ada sinyal sama sekali (biasanya tanpa website & tanpa review).
 
@@ -85,6 +87,22 @@ npm run import:csv
 ```
 
 Perintah impor membuat backup di `site/data/backups/` dan mempertahankan `groups`/`notes` yang sudah diedit lewat admin. Gunakan `--reset-metadata` jika ingin mengembalikan keduanya ke default dari script. Data CSV/Excel pipeline adalah sumber impor, bukan sumber kanonis website.
+
+## Test & validasi
+
+```bash
+npm test                 # unit + smoke test (Node test runner)
+npm run validate:site    # validasi schema site/data/directory.json
+```
+
+Workflow GitHub Pages menjalankan `npm ci`, `npm test`, dan `npm run validate:site` sebelum deploy. Kalau salah satu gagal, situs tidak di-deploy.
+
+Website peta mendukung filter cepat `Terverifikasi` dan `Punya kontak`, serta deep link per studio:
+
+```text
+map.html?studio=<place-id>
+map.html?group=agency&verified=1
+```
 
 ## Opsi CLI
 

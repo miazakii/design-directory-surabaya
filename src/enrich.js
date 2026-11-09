@@ -132,11 +132,11 @@ async function fetchEnrichment(place) {
     signals.push(
       makeSignal(
         'reviews',
-        `Review Google tertua ${oldestReview.slice(0, 10)}`,
+        `Review tertua dalam sampel ${oldestReview.slice(0, 10)}`,
         oldestReview,
         place.mapsUrl,
         config.weights.reviews,
-        `${place.reviewDates.length} review dianalisis, yang tertua dipublikasikan ${oldestReview.slice(0, 10)}`,
+        `${place.reviewDates.length} review terbaru dianalisis; yang tertua dalam sampel dipublikasikan ${oldestReview.slice(0, 10)}. Ini batas bawah aktivitas, bukan review pertama sepanjang sejarah.`,
       ),
     );
   }

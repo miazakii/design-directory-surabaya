@@ -6,7 +6,7 @@ import { createClient, runActor, buildActorInput, fetchDatasetItems } from './ap
 import { normalizePlace, mergePlace } from './normalize.js';
 import { relevanceOf } from './relevance.js';
 import { enrichPlace } from './enrich.js';
-import { classifyAge, cutoffDate, AGE_STATUS, AGE_ORDER } from './age.js';
+import { classifyAge, cutoffDate, ageStatusLabel, AGE_STATUS, AGE_ORDER } from './age.js';
 import { loadCache, saveCache } from './cache.js';
 import { exportWorkbook } from './export.js';
 import { log, mapLimit, parseArgs } from './utils.js';
@@ -77,6 +77,7 @@ async function collect({ searchStrings, maxPlacesPerSearch }) {
         keywords: searchStrings,
         maxPlacesPerSearch,
         maxReviewsPerPlace: config.maxReviewsPerPlace,
+        reviewsSort: config.maxReviewsPerPlace > 0 ? 'newest' : '-',
         contactsEnrichment: config.contactsEnrichment,
         enrichmentEnabled,
       },
@@ -126,6 +127,7 @@ async function collect({ searchStrings, maxPlacesPerSearch }) {
       keywords: searchStrings,
       maxPlacesPerSearch,
       maxReviewsPerPlace: config.maxReviewsPerPlace,
+      reviewsSort: config.maxReviewsPerPlace > 0 ? 'newest' : '-',
       contactsEnrichment: config.contactsEnrichment,
       enrichmentEnabled,
     },
@@ -151,10 +153,10 @@ function report(finalList, relevant) {
   }, {});
 
   log('--- Ringkasan ---');
-  log(`Usia terverifikasi (>= ${config.minYearsOperating} tahun): ${counts[AGE_STATUS.VERIFIED] ?? 0}`);
-  log(`Perlu cek manual: ${counts[AGE_STATUS.MANUAL] ?? 0}`);
-  log(`Tidak dapat dipastikan: ${counts[AGE_STATUS.UNKNOWN] ?? 0}`);
-  log(`Kemungkinan < ${config.minYearsOperating} tahun (dibuang): ${counts[AGE_STATUS.YOUNG] ?? 0}`);
+  log(`${ageStatusLabel(AGE_STATUS.VERIFIED)}: ${counts[AGE_STATUS.VERIFIED] ?? 0}`);
+  log(`${ageStatusLabel(AGE_STATUS.MANUAL)}: ${counts[AGE_STATUS.MANUAL] ?? 0}`);
+  log(`${ageStatusLabel(AGE_STATUS.UNKNOWN)}: ${counts[AGE_STATUS.UNKNOWN] ?? 0}`);
+  log(`${ageStatusLabel(AGE_STATUS.YOUNG)} (dibuang): ${counts[AGE_STATUS.YOUNG] ?? 0}`);
   log(`Masuk sheet Studio: ${finalList.length}/${targetCount}`);
 
   if (finalList.length < targetCount) {

@@ -30,6 +30,7 @@ export const config = {
   relevance: {
     // Nama yang menyebut branding/desain secara eksplisit -> langsung dianggap relevan,
     // mengalahkan kategori Google yang sering salah (mis. "Konsultan Pemasaran" untuk agensi desain).
+    // Istilah pengecualian di nama tetap menang (mis. "Studio Desain Interior").
     strongName: [
       'brand',
       'penjenamaan',

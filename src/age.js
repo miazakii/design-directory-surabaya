@@ -1,16 +1,47 @@
 import { config } from './config.js';
 import { yearsBetween } from './utils.js';
 
+// Kode status stabil untuk logika; label manusia dibuat dinamis dari MIN_YEARS.
 export const AGE_STATUS = {
-  VERIFIED: 'Usia terverifikasi (>= 2 tahun)',
-  MANUAL: 'Perlu cek manual',
-  UNKNOWN: 'Tidak dapat dipastikan',
-  YOUNG: 'Kemungkinan < 2 tahun',
+  VERIFIED: 'verified',
+  MANUAL: 'manual',
+  UNKNOWN: 'unknown',
+  YOUNG: 'young',
 };
 
-export const AGE_ORDER = [AGE_STATUS.VERIFIED, AGE_STATUS.MANUAL, AGE_STATUS.UNKNOWN, AGE_STATUS.YOUNG];
+export const AGE_ORDER = [
+  AGE_STATUS.VERIFIED,
+  AGE_STATUS.MANUAL,
+  AGE_STATUS.UNKNOWN,
+  AGE_STATUS.YOUNG,
+];
 
 const YOUTH_PROOF_TYPES = new Set(['wayback', 'domain']);
+
+export function ageStatusLabel(status, minYears = config.minYearsOperating) {
+  switch (status) {
+    case AGE_STATUS.VERIFIED:
+      return `Usia terverifikasi (>= ${minYears} tahun)`;
+    case AGE_STATUS.YOUNG:
+      return `Kemungkinan < ${minYears} tahun`;
+    case AGE_STATUS.MANUAL:
+      return 'Perlu cek manual';
+    case AGE_STATUS.UNKNOWN:
+      return 'Tidak dapat dipastikan';
+    default:
+      return '';
+  }
+}
+
+export function ageStatusFromLabel(label) {
+  const text = String(label ?? '').trim();
+  if (!text) return null;
+  if (text.startsWith('Usia terverifikasi')) return AGE_STATUS.VERIFIED;
+  if (text.startsWith('Kemungkinan <')) return AGE_STATUS.YOUNG;
+  if (text === 'Perlu cek manual') return AGE_STATUS.MANUAL;
+  if (text === 'Tidak dapat dipastikan') return AGE_STATUS.UNKNOWN;
+  return null;
+}
 
 export function cutoffDate(now = new Date()) {
   const cutoff = new Date(now);
@@ -43,6 +74,7 @@ export function classifyAge(signals, now = new Date()) {
 
   return {
     status,
+    statusLabel: ageStatusLabel(status),
     confidence,
     cutoffMs,
     cutoff,

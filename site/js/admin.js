@@ -22,6 +22,7 @@
     data: null,
     sha: null,
     selectedId: null,
+    dirty: false,
   };
 
   const loginView = document.getElementById('login-view');
@@ -63,14 +64,13 @@
     { key: 'longitude', label: 'Longitude', type: 'number' },
     { key: 'mapsUrl', label: 'Google Maps URL', type: 'text' },
     { key: 'placeId', label: 'Place ID', type: 'text' },
-    { key: 'ageStatus', label: 'Status Usia', type: 'text' },
+    { key: 'ageStatusCode', label: 'Status Usia', type: 'select' },
     { key: 'confidence', label: 'Skor Keyakinan', type: 'number' },
     { key: 'foundedYear', label: 'Tahun Berdiri', type: 'number' },
     { key: 'ageYears', label: 'Usia (tahun)', type: 'number' },
     { key: 'ageSummary', label: 'Sinyal Usia', type: 'textarea' },
     { key: 'evidenceUrl', label: 'Link Bukti', type: 'text' },
     { key: 'sourceKeyword', label: 'Keyword Sumber', type: 'text' },
-    { key: 'needsReview', label: 'Perlu verifikasi manual', type: 'checkbox' },
     { key: 'outsideSurabaya', label: 'Di luar Surabaya', type: 'checkbox' },
   ];
 
@@ -86,6 +86,46 @@
 
   function safeColor(value) {
     return /^#[0-9a-f]{6}$/i.test(String(value || '')) ? value : '#8D99AE';
+  }
+
+  function minYears() {
+    return Number(state.data?.minYears) || 2;
+  }
+
+  function ageStatusLabel(code) {
+    switch (code) {
+      case 'verified':
+        return `Usia terverifikasi (>= ${minYears()} tahun)`;
+      case 'young':
+        return `Kemungkinan < ${minYears()} tahun`;
+      case 'manual':
+        return 'Perlu cek manual';
+      case 'unknown':
+        return 'Tidak dapat dipastikan';
+      default:
+        return '';
+    }
+  }
+
+  function ageStatusFromLabel(label) {
+    const text = String(label ?? '').trim();
+    if (text.startsWith('Usia terverifikasi')) return 'verified';
+    if (text.startsWith('Kemungkinan <')) return 'young';
+    if (text === 'Perlu cek manual') return 'manual';
+    if (text === 'Tidak dapat dipastikan') return 'unknown';
+    return '';
+  }
+
+  function ageStatusOptions(selected) {
+    return [
+      ['', '—'],
+      ['verified', `Terverifikasi (>= ${minYears()} tahun)`],
+      ['manual', 'Perlu cek manual'],
+      ['unknown', 'Tidak dapat dipastikan'],
+      ['young', `Kemungkinan < ${minYears()} tahun`],
+    ]
+      .map(([value, label]) => `<option value="${esc(value)}"${value === selected ? ' selected' : ''}>${esc(label)}</option>`)
+      .join('');
   }
 
   function utf8Base64(str) {
@@ -193,6 +233,13 @@
       if (field.type === 'group') {
         return `<label for="f-group">${esc(field.label)}</label><select id="f-group" class="admin-input">${groupOptions}</select>`;
       }
+      if (field.type === 'select') {
+        const selected =
+          field.key === 'ageStatusCode'
+            ? studio.ageStatusCode || ageStatusFromLabel(studio.ageStatus)
+            : studio[field.key] || '';
+        return `<label for="f-${field.key}">${esc(field.label)}</label><select id="f-${field.key}" class="admin-input">${ageStatusOptions(selected)}</select>`;
+      }
       if (field.type === 'checkbox') {
         return `<label class="admin-check"><input type="checkbox" id="f-${field.key}"${studio[field.key] ? ' checked' : ''}> ${esc(field.label)}</label>`;
       }
@@ -216,6 +263,7 @@
       if (!window.confirm(`Hapus "${studio.name}"?`)) return;
       state.data.studios = state.data.studios.filter((entry) => entry.id !== studio.id);
       state.selectedId = null;
+      markDirty();
       renderStudioList();
       renderStudioForm(null);
     });
@@ -227,10 +275,17 @@
       if (!element) continue;
       if (field.type === 'checkbox') studio[field.key] = element.checked;
       else if (field.type === 'number') studio[field.key] = element.value === '' ? null : Number(element.value);
-      else if (field.type === 'group') studio[field.key] = element.value;
+      else if (field.type === 'group' || field.type === 'select') studio[field.key] = element.value;
       else if (field.array) studio[field.key] = element.value.split('\n').map((entry) => entry.trim()).filter(Boolean);
       else studio[field.key] = element.value;
     }
+
+    if (studio.ageStatusCode !== undefined) {
+      studio.ageStatusCode = studio.ageStatusCode || '';
+      studio.ageStatus = ageStatusLabel(studio.ageStatusCode);
+      studio.needsReview = ['manual', 'unknown'].includes(studio.ageStatusCode);
+    }
+
     return studio;
   }
 
@@ -266,13 +321,108 @@
     document.getElementById('tab-categories').hidden = tab !== 'categories';
   }
 
-  async function saveData() {
-    if (state.selectedId) {
-      const studio = state.data.studios.find((entry) => entry.id === state.selectedId);
-      if (studio) serializeStudioForm(studio);
+  function markDirty() {
+    state.dirty = true;
+    if (!saveBtn.disabled) {
+      saveStatus.textContent = 'Ada perubahan belum disimpan.';
+      saveStatus.className = '';
     }
+  }
+
+  function flushCurrentForm() {
+    if (!state.selectedId) return;
+    const studio = state.data.studios.find((entry) => entry.id === state.selectedId);
+    if (studio) serializeStudioForm(studio);
+  }
+
+  function flushGroups() {
+    if (!groupsEditor.querySelector('.group-row')) return;
     state.data.groups = serializeGroups();
+  }
+
+  function remapGroupKeys(oldGroups, newGroups) {
+    const newKeys = new Set(newGroups.map((group) => group.key));
+    const remap = new Map();
+    oldGroups.forEach((oldGroup, index) => {
+      const next = newGroups[index];
+      if (next && oldGroup.key !== next.key && !newKeys.has(oldGroup.key)) {
+        remap.set(oldGroup.key, next.key);
+      }
+    });
+    if (remap.size === 0) return;
+    state.data.studios.forEach((studio) => {
+      if (remap.has(studio.group)) studio.group = remap.get(studio.group);
+    });
+  }
+
+  function validateData(data) {
+    const errors = [];
+    const groups = Array.isArray(data.groups) ? data.groups : [];
+    if (groups.length === 0) errors.push('Minimal satu kategori.');
+
+    const groupKeys = new Set();
+    groups.forEach((group, index) => {
+      if (!group.key || !String(group.key).trim()) errors.push(`Kategori #${index + 1} belum punya key.`);
+      else if (groupKeys.has(group.key)) errors.push(`Key kategori duplikat: ${group.key}.`);
+      else groupKeys.add(group.key);
+      if (!group.label || !String(group.label).trim()) errors.push(`Kategori #${index + 1} belum punya label.`);
+      if (!/^#[0-9a-f]{6}$/i.test(String(group.color || ''))) {
+        errors.push(`Kategori #${index + 1}: warna harus format #RRGGBB.`);
+      }
+    });
+
+    if (!Array.isArray(data.studios)) {
+      errors.push('Daftar studio tidak valid.');
+      return errors;
+    }
+
+    const ids = new Set();
+    data.studios.forEach((studio, index) => {
+      const label = studio.name ? `"${studio.name}"` : `baris ${index + 1}`;
+      if (!studio.id || !String(studio.id).trim()) errors.push(`${label}: ID wajib diisi.`);
+      else if (ids.has(studio.id)) errors.push(`${label}: ID duplikat.`);
+      else ids.add(studio.id);
+      if (!studio.name || !String(studio.name).trim()) errors.push(`Baris ${index + 1}: nama wajib diisi.`);
+      if (!studio.group || !String(studio.group).trim()) errors.push(`${label}: kategori wajib dipilih.`);
+
+      if (studio.rating != null && studio.rating !== '') {
+        const rating = Number(studio.rating);
+        if (!Number.isFinite(rating) || rating < 0 || rating > 5) errors.push(`${label}: rating harus 0–5.`);
+      }
+      for (const [key, min, max] of [
+        ['latitude', -90, 90],
+        ['longitude', -180, 180],
+      ]) {
+        if (studio[key] == null || studio[key] === '') continue;
+        const value = Number(studio[key]);
+        if (!Number.isFinite(value) || value < min || value > max) {
+          errors.push(`${label}: ${key} harus ${min}–${max}.`);
+        }
+      }
+    });
+
+    if (!Array.isArray(data.notes)) errors.push('Catatan data tidak valid.');
+    return errors;
+  }
+
+  async function saveData() {
+    flushCurrentForm();
+
+    const oldGroups = state.data.groups;
+    const newGroups = serializeGroups();
+    remapGroupKeys(oldGroups, newGroups);
+    state.data.groups = newGroups;
     state.data.notes = notesEditor.value.split('\n').map((entry) => entry.trim()).filter(Boolean);
+
+    const validationErrors = validateData(state.data);
+    if (validationErrors.length > 0) {
+      state.dirty = true;
+      const more = validationErrors.length > 3 ? ` (+${validationErrors.length - 3} lagi)` : '';
+      saveStatus.textContent = `Validasi gagal: ${validationErrors.slice(0, 3).join(' ')}${more}`;
+      saveStatus.className = 'admin-status-err';
+      return;
+    }
+
     state.data.generatedAt = new Date().toISOString();
 
     const json = JSON.stringify(state.data, null, 2);
@@ -315,7 +465,13 @@
         state.sha = res.content.sha;
         saveStatus.textContent = 'Tersimpan ✓';
       }
+      state.dirty = false;
       saveStatus.className = 'admin-status-ok';
+      renderStudioList();
+      if (state.selectedId) {
+        const current = state.data.studios.find((entry) => entry.id === state.selectedId);
+        if (current) renderStudioForm(current);
+      }
     } catch (error) {
       saveStatus.textContent = `Gagal: ${error.message}`;
       saveStatus.className = 'admin-status-err';
@@ -351,7 +507,11 @@
     loginView.hidden = true;
     editorView.hidden = false;
     adminSearch.value = '';
+    state.data.minYears = Number(state.data.minYears) || 2;
     state.selectedId = null;
+    state.dirty = false;
+    saveStatus.textContent = '';
+    saveStatus.className = '';
     renderStudioList();
     renderStudioForm(null);
     renderGroupsEditor();
@@ -361,17 +521,31 @@
 
   adminSearch.addEventListener('input', renderStudioList);
 
+  adminForm.addEventListener('input', () => {
+    flushCurrentForm();
+    markDirty();
+  });
+  adminForm.addEventListener('change', () => {
+    flushCurrentForm();
+    markDirty();
+  });
+  groupsEditor.addEventListener('input', markDirty);
+  groupsEditor.addEventListener('change', markDirty);
+  notesEditor.addEventListener('input', markDirty);
+
   adminList.addEventListener('click', (event) => {
     const item = event.target.closest('.admin-studio');
     if (!item) return;
     const studio = state.data.studios.find((entry) => entry.id === item.dataset.id);
     if (!studio) return;
+    flushCurrentForm();
     state.selectedId = studio.id;
     renderStudioList();
     renderStudioForm(studio);
   });
 
   addBtn.addEventListener('click', () => {
+    flushCurrentForm();
     const studio = {
       id: `new-${Date.now()}`,
       no: state.data.studios.length + 1,
@@ -395,6 +569,7 @@
       longitude: null,
       mapsUrl: '',
       placeId: '',
+      ageStatusCode: '',
       ageStatus: '',
       confidence: 0,
       foundedYear: null,
@@ -407,22 +582,27 @@
     };
     state.data.studios.push(studio);
     state.selectedId = studio.id;
+    markDirty();
     renderStudioList();
     renderStudioForm(studio);
   });
 
   groupsEditor.addEventListener('click', (event) => {
     if (event.target.id === 'group-add') {
+      flushGroups();
       state.data.groups.push({ key: 'kategori-baru', label: 'Kategori Baru', color: '#8D99AE' });
+      markDirty();
       renderGroupsEditor();
       return;
     }
     const deleteBtn = event.target.closest('.group-delete');
     if (deleteBtn) {
       const row = deleteBtn.closest('.group-row');
-      const key = row.dataset.key;
+      const key = row.querySelector('.group-key').value.trim() || row.dataset.key;
       if (!window.confirm(`Hapus kategori "${key}"?`)) return;
+      flushGroups();
       state.data.groups = state.data.groups.filter((group) => group.key !== key);
+      markDirty();
       renderGroupsEditor();
     }
   });
@@ -434,8 +614,15 @@
   saveBtn.addEventListener('click', saveData);
 
   logoutBtn.addEventListener('click', () => {
+    if (state.dirty && !window.confirm('Ada perubahan yang belum disimpan. Keluar tetap?')) return;
     sessionStorage.clear();
     window.location.reload();
+  });
+
+  window.addEventListener('beforeunload', (event) => {
+    if (!state.dirty) return;
+    event.preventDefault();
+    event.returnValue = '';
   });
 
   ownerInput.value = state.owner;

@@ -1,10 +1,14 @@
+import 'dotenv/config';
 import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { AGE_STATUS, ageStatusFromLabel, ageStatusLabel } from '../../src/age.js';
+import { validateDirectory } from '../../src/validate-directory.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const ROOT = path.resolve(__dirname, '..', '..');
 const CSV_PATH = path.join(ROOT, 'data', 'studio-desain-surabaya.csv');
+const MIN_YEARS = Number(process.env.MIN_YEARS ?? 2);
 
 const args = process.argv.slice(2);
 const force = args.includes('--force');
@@ -133,8 +137,11 @@ function normalizeRow(raw, index) {
   const category = raw['Kategori Utama'] ?? '';
   const groupKey = CATEGORY_GROUPS[category] ?? 'other';
   const rating = toNumber(raw.Rating);
-  const ageStatus = raw['Status Usia'] ?? '';
+  const rawAgeStatus = raw['Status Usia'] ?? '';
+  const ageStatusCode = ageStatusFromLabel(rawAgeStatus) ?? '';
+  const ageStatus = ageStatusCode ? ageStatusLabel(ageStatusCode, MIN_YEARS) : rawAgeStatus;
   const city = raw.Kota ?? '';
+  const normalizedCity = city.trim().toLowerCase();
 
   return {
     id: raw['Place ID'] || `row-${index + 1}`,
@@ -159,6 +166,7 @@ function normalizeRow(raw, index) {
     longitude: toNumber(raw.Longitude),
     mapsUrl: raw['Google Maps'] ?? '',
     placeId: raw['Place ID'] ?? '',
+    ageStatusCode,
     ageStatus,
     confidence: toInteger(raw['Skor Keyakinan']) ?? 0,
     foundedYear: toInteger(raw['Estimasi Tahun Berdiri']),
@@ -166,8 +174,14 @@ function normalizeRow(raw, index) {
     ageSummary: raw['Sinyal Usia'] ?? '',
     evidenceUrl: raw['Bukti Utama'] ?? '',
     sourceKeyword: raw['Ditemukan via Keyword'] ?? '',
-    needsReview: ageStatus === 'Perlu cek manual' || ageStatus === 'Tidak dapat dipastikan',
-    outsideSurabaya: city.length > 0 && city.toLowerCase() !== 'surabaya',
+    needsReview:
+      ageStatusCode === AGE_STATUS.MANUAL ||
+      ageStatusCode === AGE_STATUS.UNKNOWN ||
+      rawAgeStatus === 'Perlu cek manual' ||
+      rawAgeStatus === 'Tidak dapat dipastikan',
+    outsideSurabaya:
+      normalizedCity.length > 0 &&
+      !['surabaya', 'kota surabaya', 'surabaya city'].includes(normalizedCity),
   };
 }
 
@@ -233,17 +247,21 @@ function main() {
     records.push(normalizeRow(raw, i - 1));
   }
 
-  const verified = records.filter(
-    (record) => record.ageStatus === 'Usia terverifikasi (>= 2 tahun)',
-  ).length;
+  const verified = records.filter((record) => record.ageStatusCode === AGE_STATUS.VERIFIED).length;
 
   const payload = {
     title: 'Design Directory Surabaya',
     generatedAt: new Date().toISOString(),
+    minYears: MIN_YEARS,
     groups: (!resetMetadata && existingMeta.groups) || GROUPS,
     notes: (!resetMetadata && existingMeta.notes) || DATA_NOTES,
     studios: records,
   };
+
+  const errors = validateDirectory(payload);
+  if (errors.length > 0) {
+    throw new Error(`Data direktori tidak valid:\n- ${errors.join('\n- ')}`);
+  }
 
   fs.mkdirSync(path.dirname(OUT_PATH), { recursive: true });
   fs.writeFileSync(OUT_PATH, `${JSON.stringify(payload, null, 2)}\n`, 'utf8');
@@ -252,4 +270,18 @@ function main() {
   console.log(`Verified age: ${verified}`);
 }
 
-main();
+const isDirectRun =
+  process.argv[1] && path.resolve(process.argv[1]) === fileURLToPath(import.meta.url);
+
+if (isDirectRun) main();
+
+export {
+  parseDelimited,
+  normalizeRow,
+  readExistingMetadata,
+  backupExisting,
+  toNumber,
+  toInteger,
+  splitList,
+  main,
+};
