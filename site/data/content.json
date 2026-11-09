@@ -11,9 +11,18 @@
     "issueUrl": "https://github.com/miazakii/design-directory-surabaya/issues/new?template=koreksi-data.yml"
   },
   "navigation": [
-    { "label": "Peta", "href": "map.html" },
-    { "label": "Kategori", "href": "index.html#kategori" },
-    { "label": "Tentang", "href": "index.html#tentang" }
+    {
+      "label": "Peta",
+      "href": "map.html"
+    },
+    {
+      "label": "Kategori",
+      "href": "index.html#kategori"
+    },
+    {
+      "label": "Tentang",
+      "href": "index.html#tentang"
+    }
   ],
   "cta": {
     "label": "Buka direktori",
@@ -25,8 +34,14 @@
       "title": "Peta ekosistem desain",
       "highlight": "Surabaya.",
       "description": "Studio, agensi, konsultan, dan praktisi desain dalam satu direktori yang bisa dicari, difilter, dan dibaca sebagai jaringan — bukan sekadar daftar.",
-      "primary": { "label": "Jelajahi peta", "href": "map.html" },
-      "secondary": { "label": "Lihat kategori", "href": "#kategori" }
+      "primary": {
+        "label": "Jelajahi peta",
+        "href": "map.html"
+      },
+      "secondary": {
+        "label": "Lihat kategori",
+        "href": "#kategori"
+      }
     },
     "snapshot": {
       "eyebrow": "Snapshot direktori",
@@ -64,8 +79,11 @@
   },
   "map": {
     "title": "Peta · Design Directory Surabaya",
-    "description": "Peta interaktif 100 studio dan agensi desain di Surabaya.",
-    "defaultCenter": [112.745, -7.275],
+    "description": "Peta interaktif studio dan agensi desain di Surabaya.",
+    "defaultCenter": [
+      112.745,
+      -7.275
+    ],
     "defaultZoom": 12,
     "privacyLabel": "Privasi & disclaimer"
   },
@@ -142,9 +160,18 @@
     "text": "Design Directory Surabaya — referensi terbuka.",
     "description": "Referensi terbuka untuk memetakan studio, agensi, dan praktisi desain di Surabaya.",
     "links": [
-      { "label": "Peta", "href": "map.html" },
-      { "label": "Privasi & disclaimer", "href": "privacy.html" },
-      { "label": "GitHub", "href": "https://github.com/miazakii/design-directory-surabaya" }
+      {
+        "label": "Peta",
+        "href": "map.html"
+      },
+      {
+        "label": "Privasi & disclaimer",
+        "href": "privacy.html"
+      },
+      {
+        "label": "GitHub",
+        "href": "https://github.com/miazakii/design-directory-surabaya"
+      }
     ]
   },
   "settings": {
