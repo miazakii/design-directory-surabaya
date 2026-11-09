@@ -6,9 +6,7 @@
   <title>Admin · Design Directory Surabaya</title>
   <meta name="robots" content="noindex, nofollow">
   <meta name="theme-color" content="#ffffff">
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Host+Grotesk:wght@400;500;600;700&display=swap">
+  <link rel="stylesheet" href="css/fonts.css">
   <link rel="stylesheet" href="css/style.css">
   <link rel="stylesheet" href="css/admin.css">
 </head>
@@ -43,7 +41,7 @@
     <header class="admin-topbar">
       <span class="brand">Admin <span>Direktori</span></span>
       <div class="admin-topbar__actions">
-        <span id="save-status"></span>
+        <span id="save-status" role="status" aria-live="polite"></span>
         <button id="save-btn" class="btn" type="button">Simpan Perubahan</button>
         <button id="logout-btn" class="btn btn--ghost" type="button">Keluar</button>
       </div>

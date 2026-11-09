@@ -3,6 +3,8 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { AGE_STATUS, ageStatusFromLabel, ageStatusLabel } from '../../src/age.js';
+import { findPossibleDuplicates, isSurabayaCity, stableId } from '../../src/data-quality.js';
+import { domainOf } from '../../src/normalize.js';
 import { validateDirectory } from '../../src/validate-directory.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
@@ -61,14 +63,52 @@ const GROUPS = [
   { key: 'other', label: 'Lainnya', color: '#8D99AE' },
 ];
 
-// Manual, data-quality observations surfaced on the site rather than silently
-// mutating the source rows.
-const DATA_NOTES = [
-  'VisualCast muncul dua kali (No. 33 & 34) — kemungkinan entitas yang sama.',
-  'SENAYA CREATIVE (No. 93) berlokasi di Kabupaten Gresik, bukan Surabaya.',
-  'Beberapa baris berstatus "Perlu cek manual" / "Tidak dapat dipastikan" (usia belum terbukti).',
-  'Beberapa listing generik (mis. "DESAIN BANNER", "RADJA KEMASAN") perlu kurasi lanjutan.',
-];
+// Catatan data dibuat dari hasil pemeriksaan, bukan hardcode per entitas.
+function buildDataNotes(records) {
+  const notes = [];
+  const duplicates = findPossibleDuplicates(records);
+
+  for (const group of duplicates.slice(0, 5)) {
+    notes.push(`Kemungkinan duplikat: ${group.names.join(' & ')} (${group.reasons.join(', ')}).`);
+  }
+  if (duplicates.length > 5) {
+    notes.push(`+${duplicates.length - 5} kelompok duplikat lain; jalankan npm run check:data.`);
+  }
+
+  const outside = records.filter((record) => record.outsideSurabaya);
+  if (outside.length > 0) {
+    notes.push(
+      `${outside.length} baris berada di luar Kota Surabaya: ${outside
+        .slice(0, 3)
+        .map((record) => record.name)
+        .join(', ')}.`,
+    );
+  }
+
+  const needsReview = records.filter((record) => record.needsReview).length;
+  if (needsReview > 0) {
+    notes.push(
+      `${needsReview} baris belum terverifikasi usia (status "Perlu cek manual" / "Tidak dapat dipastikan").`,
+    );
+  }
+
+  const noDigitalContact = records.filter(
+    (record) =>
+      !record.phone &&
+      !record.website &&
+      record.emails.length === 0 &&
+      !record.instagram &&
+      !record.facebook &&
+      !record.linkedin,
+  ).length;
+  if (noDigitalContact > 0) {
+    notes.push(`${noDigitalContact} baris hanya punya kontak telepon atau tanpa kontak digital.`);
+  }
+
+  if (notes.length === 0) notes.push('Tidak ada anomali data yang terdeteksi otomatis.');
+  notes.push('Status usia adalah estimasi batas bawah aktivitas, bukan tanggal berdiri resmi.');
+  return notes;
+}
 
 function parseDelimited(text, delimiter) {
   const rows = [];
@@ -141,10 +181,10 @@ function normalizeRow(raw, index) {
   const ageStatusCode = ageStatusFromLabel(rawAgeStatus) ?? '';
   const ageStatus = ageStatusCode ? ageStatusLabel(ageStatusCode, MIN_YEARS) : rawAgeStatus;
   const city = raw.Kota ?? '';
-  const normalizedCity = city.trim().toLowerCase();
+  const website = raw.Website ?? '';
 
   return {
-    id: raw['Place ID'] || `row-${index + 1}`,
+    id: raw['Place ID'] || stableId(raw['Nama Studio'], raw['Alamat']),
     no: index + 1,
     name: raw['Nama Studio'] ?? '',
     category,
@@ -153,7 +193,8 @@ function normalizeRow(raw, index) {
     city,
     postalCode: raw['Kode Pos'] ?? '',
     phone: raw.Telepon ?? '',
-    website: raw.Website ?? '',
+    website,
+    domain: domainOf(website),
     emails: splitList(raw.Email),
     instagram: raw.Instagram ?? '',
     facebook: raw.Facebook ?? '',
@@ -179,9 +220,7 @@ function normalizeRow(raw, index) {
       ageStatusCode === AGE_STATUS.UNKNOWN ||
       rawAgeStatus === 'Perlu cek manual' ||
       rawAgeStatus === 'Tidak dapat dipastikan',
-    outsideSurabaya:
-      normalizedCity.length > 0 &&
-      !['surabaya', 'kota surabaya', 'surabaya city'].includes(normalizedCity),
+    outsideSurabaya: city.length > 0 && !isSurabayaCity(city),
   };
 }
 
@@ -250,11 +289,12 @@ function main() {
   const verified = records.filter((record) => record.ageStatusCode === AGE_STATUS.VERIFIED).length;
 
   const payload = {
+    schemaVersion: 2,
     title: 'Design Directory Surabaya',
     generatedAt: new Date().toISOString(),
     minYears: MIN_YEARS,
     groups: (!resetMetadata && existingMeta.groups) || GROUPS,
-    notes: (!resetMetadata && existingMeta.notes) || DATA_NOTES,
+    notes: (!resetMetadata && existingMeta.notes) || buildDataNotes(records),
     studios: records,
   };
 
@@ -280,6 +320,7 @@ export {
   normalizeRow,
   readExistingMetadata,
   backupExisting,
+  buildDataNotes,
   toNumber,
   toInteger,
   splitList,

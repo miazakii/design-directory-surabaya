@@ -31,6 +31,8 @@ jobs:
         run: npm test
       - name: Validate directory data
         run: npm run validate:site
+      - name: Build SEO pages
+        run: npm run build:seo
       - name: Configure Pages
         uses: actions/configure-pages@v5
       - name: Upload site

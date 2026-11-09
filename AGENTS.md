@@ -20,12 +20,20 @@ Repo: `https://github.com/miazakii/design-directory-surabaya` (branch `main`).
 | `src/apify.js` | Pemanggilan Apify actor Google Maps |
 | `src/enrich.js` | Bukti usia: Wayback, RDAP, copyright website |
 | `src/age.js` | Perhitungan status usia, label dinamis, dan skor keyakinan |
+| `src/data-quality.js` | Normalisasi nama/telepon/kota, ID stabil, deteksi duplikat |
+| `src/dedupe.js` | Deduplikasi kandidat (placeId, telepon, koordinat + nama) |
+| `src/cost.js` | Estimasi biaya run Apify |
 | `src/validate-directory.js` | Validasi schema `directory.json` (dipakai admin, build, dan test) |
 | `src/export.js` | Export Excel (sheet Studio, Semua Kandidat, Bukti Usia, Ringkasan, Log) |
 | `data/` | Data hasil scrape, cache enrichment, Excel/CSV. **Tidak di-commit.** |
 | `site/` | Website statis yang di-deploy ke GitHub Pages/Netlify |
 | `site/data/directory.json` | Sumber data website; diedit lewat admin lokal |
 | `site/scripts/validate-directory.js` | Validasi data website untuk CI |
+| `site/scripts/build-seo.js` | Generator halaman studio, sitemap, robots |
+| `site/scripts/check-data-quality.js` | Laporan duplikat & anomali data |
+| `site/scripts/sync-vendor.js` | Salin MapLibre dari node_modules ke site/vendor |
+| `site/fonts/` | Font Host Grotesk self-host + lisensi OFL |
+| `site/vendor/maplibre/` | Aset MapLibre yang di-self-host |
 | `test/` | Unit + smoke test (`npm test`) |
 | `admin-server.mjs` | Server admin lokal + commit/push (push bisa dimatikan) |
 | `fixtures/sample-places.json` | Data contoh untuk uji offline tanpa biaya Apify |
@@ -44,6 +52,9 @@ npm run import:csv     # rebuild eksplisit dari CSV + backup otomatis
 npm run admin          # admin lokal (bind 127.0.0.1, butuh token dari terminal)
 npm test               # unit + smoke test
 npm run validate:site  # validasi schema directory.json
+npm run check:data     # laporan duplikat & kualitas data
+npm run build:seo      # generate halaman studio, sitemap, robots
+npm run vendor:sync    # salin MapLibre ke site/vendor
 npm run serve:site     # preview website di http://localhost:8000
 ```
 
@@ -66,6 +77,8 @@ OUTPUT_FILE=/tmp/demo-surabaya.xlsx node src/index.js --input fixtures/sample-pl
 9. Untuk perubahan UI, prioritaskan tooling gratis (Leaflet/MapLibre + OpenStreetMap/OpenFreeMap) dan hindari layanan berbayar/API key bila versi gratis cukup.
 10. Jika user memberi brief panjang, kerjakan langsung dengan default yang wajar; jika ada keputusan besar/ambigu, ajukan pilihan eksplisit sebelum implementasi.
 11. Setelah mengubah kode pipeline, admin, atau data website, jalankan `npm test` dan `npm run validate:site`. Jangan deploy jika salah satu gagal.
+12. Jangan mengedit manual `site/vendor/maplibre/`; jalankan `npm run vendor:sync` setelah mengubah versi dependency.
+13. Setelah mengubah data website, jalankan `npm run build:seo` agar halaman statis/sitemap ikut diperbarui.
 
 ## Konteks user (dari preferensi sebelumnya)
 

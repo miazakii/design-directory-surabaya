@@ -1,0 +1,14 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="630" viewBox="0 0 1200 630">
+  <rect width="1200" height="630" fill="#171615"/>
+  <circle cx="1010" cy="150" r="8" fill="#E63946"/>
+  <circle cx="1070" cy="150" r="8" fill="#E76F51"/>
+  <circle cx="1130" cy="150" r="8" fill="#2A9D8F"/>
+  <circle cx="1010" cy="210" r="8" fill="#457B9D"/>
+  <circle cx="1070" cy="210" r="8" fill="#9B5DE5"/>
+  <circle cx="1130" cy="210" r="8" fill="#F4A261"/>
+  <text x="80" y="230" fill="#9b948d" font-family="Helvetica, Arial, sans-serif" font-size="28" letter-spacing="6">DIREKTORI TERBUKA</text>
+  <text x="76" y="360" fill="#fff" font-family="Helvetica, Arial, sans-serif" font-size="96" font-weight="700" letter-spacing="-4">Design Directory</text>
+  <text x="76" y="470" fill="#E63946" font-family="Helvetica, Arial, sans-serif" font-size="96" font-weight="700" letter-spacing="-4">Surabaya</text>
+  <text x="80" y="550" fill="#9b948d" font-family="Helvetica, Arial, sans-serif" font-size="30">Peta ekosistem studio, agensi, dan praktisi desain.</text>
+  <rect x="80" y="590" width="1040" height="2" fill="#34312d"/>
+</svg>

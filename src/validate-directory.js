@@ -29,6 +29,13 @@ export function validateDirectory(data) {
     errors.push('minYears harus berupa angka positif.');
   }
 
+  if (
+    data.schemaVersion != null &&
+    (!Number.isInteger(Number(data.schemaVersion)) || Number(data.schemaVersion) < 1)
+  ) {
+    errors.push('schemaVersion harus bilangan bulat positif.');
+  }
+
   if (!Array.isArray(data.groups)) {
     errors.push('groups harus berupa array.');
   } else {

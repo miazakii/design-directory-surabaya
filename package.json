@@ -14,6 +14,9 @@
     "build:site": "node site/scripts/build-directory-data.js",
     "import:csv": "node site/scripts/build-directory-data.js --force",
     "validate:site": "node site/scripts/validate-directory.js",
+    "check:data": "node site/scripts/check-data-quality.js",
+    "build:seo": "node site/scripts/build-seo.js",
+    "vendor:sync": "node site/scripts/sync-vendor.js",
     "test": "node --test test/*.test.js",
     "serve:site": "python3 -m http.server 8000 --directory site",
     "admin": "node admin-server.mjs",
@@ -23,5 +26,8 @@
     "apify-client": "^2.11.2",
     "dotenv": "^16.4.5",
     "exceljs": "^4.4.0"
+  },
+  "devDependencies": {
+    "maplibre-gl": "6.17.0"
   }
 }

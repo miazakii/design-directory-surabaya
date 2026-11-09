@@ -130,6 +130,7 @@ export const config = {
     httpTimeoutMs: Number(process.env.HTTP_TIMEOUT_MS ?? 15000),
     cacheFile: 'enrich-cache.json',
     cacheMaxAgeMs: Number(process.env.ENRICH_CACHE_DAYS ?? 30) * 24 * 60 * 60 * 1000,
+    partialCacheMaxAgeMs: Number(process.env.ENRICH_PARTIAL_CACHE_MINUTES ?? 60) * 60 * 1000,
     userAgent:
       'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0 Safari/537.36',
   },

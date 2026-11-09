@@ -507,6 +507,7 @@
     loginView.hidden = true;
     editorView.hidden = false;
     adminSearch.value = '';
+    state.data.schemaVersion = Number(state.data.schemaVersion) || 2;
     state.data.minYears = Number(state.data.minYears) || 2;
     state.selectedId = null;
     state.dirty = false;

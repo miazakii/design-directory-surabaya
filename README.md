@@ -63,7 +63,16 @@ Beberapa hasil run bisa digabung (dipisah koma) — berguna kalau mau menambah k
 node src/index.js --input data/raw-run1.json,data/raw-run2.json
 ```
 
-Proses ulang tidak memanggil Apify dan memakai cache enrichment di `data/enrich-cache.json`, jadi hasilnya konsisten dan cepat (tidak menghajar Wayback Machine/RDAP berulang kali).
+Proses ulang tidak memanggil Apify dan memakai cache enrichment di `data/enrich-cache.json`, jadi hasilnya konsisten dan cepat (tidak menghajar Wayback Machine/RDAP berulang kali). Cache ditulis atomik; hasil yang sebagian gagal karena rate limit disimpan dengan TTL pendek (`ENRICH_PARTIAL_CACHE_MINUTES`, default 60 menit) lalu dicoba ulang, sementara hasil sukses memakai TTL `ENRICH_CACHE_DAYS` (default 30 hari).
+
+Setiap run juga menulis log ke `data/run-<timestamp>.log`, sehingga progres dan error bisa diperiksa setelah terminal ditutup.
+
+Contoh estimasi biaya:
+
+```bash
+node src/index.js --dry-run
+node src/index.js --dry-run --max-reviews 0 --max-per-search 30
+```
 
 ## Website & admin lokal
 
@@ -93,9 +102,13 @@ Perintah impor membuat backup di `site/data/backups/` dan mempertahankan `groups
 ```bash
 npm test                 # unit + smoke test (Node test runner)
 npm run validate:site    # validasi schema site/data/directory.json
+npm run check:data       # laporan duplikat, kontak, koordinat, status usia
+npm run build:seo        # generate halaman studio, sitemap.xml, robots.txt
+# SITE_URL=https://domain-anda.example npm run build:seo  # override URL kanonis
+npm run vendor:sync      # salin MapLibre dari node_modules ke site/vendor
 ```
 
-Workflow GitHub Pages menjalankan `npm ci`, `npm test`, dan `npm run validate:site` sebelum deploy. Kalau salah satu gagal, situs tidak di-deploy.
+Workflow GitHub Pages menjalankan `npm ci`, `npm test`, `npm run validate:site`, dan `npm run build:seo` sebelum deploy. Kalau salah satu gagal, situs tidak di-deploy. Netlify juga menjalankan `build:seo` sebelum publish.
 
 Website peta mendukung filter cepat `Terverifikasi` dan `Punya kontak`, serta deep link per studio:
 
@@ -111,7 +124,9 @@ map.html?group=agency&verified=1
 | `--input <file[,file]>` | Pakai JSON hasil scrape sebelumnya (satu atau beberapa file, dipisah koma), lewati Apify |
 | `--limit <n>` | Jumlah studio yang diinginkan di sheet Studio (default 100) |
 | `--max-per-search <n>` | Batas place per keyword (default 40) |
+| `--max-reviews <n>` | Override jumlah review per place (default dari `MAX_REVIEWS`) |
 | `--keywords "a,b,c"` | Ganti daftar keyword pencarian |
+| `--dry-run` | Tampilkan estimasi biaya tanpa memanggil Apify |
 | `--no-enrich` | Lewati pengumpulan bukti usia (jauh lebih cepat, semua jadi "Tidak dapat dipastikan") |
 
 ## Isi file Excel
@@ -198,6 +213,14 @@ Tingkat verifikasi usia ≈ 64% dari kandidat relevan. Untuk mencapai 100 studio
 `MAX_TOTAL_CHARGE_USD` (default 10) membatasi biaya per run. Kalau cap tercapai, actor berhenti dan pipeline tetap memproses data yang sudah terkumpul — status & biaya tercatat di sheet `Ringkasan`.
 
 `MAX_REVIEWS=0` berarti tidak ada review yang diambil: termurah, tapi studio yang tidak punya website akan jatuh ke "Perlu cek manual".
+
+## Lisensi & aset
+
+- Kode project ini dilisensikan under MIT — lihat `LICENSE`.
+- Data direktori (nama usaha, alamat, kontak, dan sejenisnya) **tidak** termasuk lisensi MIT. Data disediakan untuk referensi dan tidak boleh didistribusikan ulang secara massal tanpa izin.
+- MapLibre GL JS di-self-host di `site/vendor/maplibre/` (lisensi BSD-3-Clause, lihat file `LICENSE.txt` di folder tersebut).
+- Font Host Grotesk di-self-host di `site/fonts/` (SIL Open Font License 1.1, lihat `site/fonts/OFL.txt`).
+- Peta memakai tile OpenFreeMap dan data OpenStreetMap.
 
 ## Catatan legal & privasi
 

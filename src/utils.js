@@ -1,6 +1,28 @@
+import fs from 'node:fs';
+import path from 'node:path';
+
+let logFilePath = '';
+
+export async function setLogFile(filePath) {
+  logFilePath = path.resolve(filePath);
+  await fs.promises.mkdir(path.dirname(logFilePath), { recursive: true });
+  await fs.promises.writeFile(logFilePath, `# Run log ${new Date().toISOString()}\n`, 'utf8');
+}
+
+export function getLogFilePath() {
+  return logFilePath;
+}
+
 export function log(message) {
   const time = new Date().toISOString().slice(11, 19);
-  console.log(`[${time}] ${message}`);
+  const line = `[${time}] ${message}`;
+  console.log(line);
+  if (!logFilePath) return;
+  try {
+    fs.appendFileSync(logFilePath, `${line}\n`, 'utf8');
+  } catch {
+    // Logging tidak boleh menghentikan pipeline.
+  }
 }
 
 export function sleep(ms) {

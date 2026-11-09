@@ -310,6 +310,7 @@ export async function exportWorkbook(context) {
     { metric: 'Enrichment kontak Apify', value: runMeta.contactsEnrichment ? 'Aktif' : 'Nonaktif' },
     { metric: 'Enrichment bukti usia', value: runMeta.enrichmentEnabled ? 'Aktif' : 'Nonaktif' },
     { metric: 'Keyword dipakai', value: searchStrings.join(', ') },
+    { metric: 'Log file', value: runMeta.logFile ?? '' },
   ];
   logSheet.addRows(logRows);
   stripeRows(logSheet, logRows.length, LOG_COLUMNS.length);

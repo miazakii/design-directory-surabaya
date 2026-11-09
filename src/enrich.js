@@ -10,12 +10,74 @@ const FACEBOOK_RE = /https?:\/\/(?:www\.)?facebook\.com\/[A-Za-z0-9._-]{2,60}/gi
 const LINKEDIN_RE = /https?:\/\/(?:[a-z]{2,3}\.)?linkedin\.com\/(?:company|in)\/[A-Za-z0-9._-]{2,60}/gi;
 const SOCIAL_NOISE = /\/(p|reel|reels|explore|stories|share|login|signup|privacy|policies)\b/i;
 const RETRYABLE_STATUS = new Set([408, 429, 500, 502, 503, 504]);
+const HOST_BLOCK_MS = 60_000;
+const MAX_HTML_BYTES = 2 * 1024 * 1024;
+const blockedHosts = new Map();
+
+function hostOf(url) {
+  try {
+    return new URL(url).host;
+  } catch {
+    return '';
+  }
+}
+
+function isHostBlocked(url) {
+  const host = hostOf(url);
+  if (!host) return false;
+  const until = blockedHosts.get(host) ?? 0;
+  if (until <= Date.now()) {
+    blockedHosts.delete(host);
+    return false;
+  }
+  return true;
+}
+
+function blockHost(url, ms) {
+  const host = hostOf(url);
+  if (host) blockedHosts.set(host, Date.now() + ms);
+}
+
+async function readTextLimited(response, maxBytes = MAX_HTML_BYTES) {
+  if (!response.body) {
+    const text = await response.text();
+    return text.slice(0, maxBytes);
+  }
+
+  const reader = response.body.getReader();
+  const chunks = [];
+  let total = 0;
+
+  for (;;) {
+    const { done, value } = await reader.read();
+    if (done) break;
+    if (!value) continue;
+    const remaining = maxBytes - total;
+    if (remaining <= 0) {
+      await reader.cancel();
+      break;
+    }
+    chunks.push(Buffer.from(value.buffer, value.byteOffset, Math.min(value.byteLength, remaining)));
+    total += Math.min(value.byteLength, remaining);
+    if (total >= maxBytes) {
+      await reader.cancel();
+      break;
+    }
+  }
+
+  return Buffer.concat(chunks).toString('utf8');
+}
 
 async function request(url, parse, options = {}) {
   const { attempts = 1, retryDelayMs = 2500, state } = options;
   let exhausted = false;
 
   for (let attempt = 1; attempt <= attempts; attempt += 1) {
+    if (isHostBlocked(url)) {
+      exhausted = true;
+      break;
+    }
+
     const controller = new AbortController();
     const timer = setTimeout(() => controller.abort(), config.enrichment.httpTimeoutMs);
     try {
@@ -28,6 +90,13 @@ async function request(url, parse, options = {}) {
         },
       });
       if (response.ok) return await parse(response);
+      if (response.status === 429 || response.status === 503) {
+        const retryAfter = Number(response.headers.get('retry-after'));
+        blockHost(
+          url,
+          Number.isFinite(retryAfter) && retryAfter > 0 ? retryAfter * 1000 : HOST_BLOCK_MS,
+        );
+      }
       if (!RETRYABLE_STATUS.has(response.status)) return null;
       exhausted = true;
     } catch {
@@ -55,7 +124,10 @@ function extractSocials(html, pattern) {
 }
 
 async function websiteFacts(url, state) {
-  const html = await request(url, (response) => response.text(), { attempts: 2, state });
+  const html = await request(url, (response) => readTextLimited(response), {
+    attempts: 2,
+    state,
+  });
   if (!html) return { reachable: false };
 
   const currentYear = new Date().getFullYear();
@@ -181,7 +253,7 @@ async function fetchEnrichment(place) {
   }
 
   return {
-    cacheable: !state.unavailable,
+    partial: state.unavailable,
     data: {
       ageSignals: signals,
       websiteReachable: Boolean(site?.reachable),
@@ -197,11 +269,14 @@ export async function enrichPlace(place, cache) {
   const key = place.placeId || place.domain || place.name;
   const entry = cache?.[key];
 
-  if (entry && Date.now() - entry.fetchedAt < config.enrichment.cacheMaxAgeMs) {
-    return entry.data;
+  if (entry && typeof entry.fetchedAt === 'number') {
+    const maxAge = entry.partial
+      ? config.enrichment.partialCacheMaxAgeMs
+      : config.enrichment.cacheMaxAgeMs;
+    if (Date.now() - entry.fetchedAt < maxAge) return entry.data;
   }
 
-  const { data, cacheable } = await fetchEnrichment(place);
-  if (cache && cacheable) cache[key] = { fetchedAt: Date.now(), data };
+  const { data, partial } = await fetchEnrichment(place);
+  if (cache) cache[key] = { fetchedAt: Date.now(), data, partial };
   return data;
 }

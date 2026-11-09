@@ -12,7 +12,11 @@ export function createClient(token) {
   return new ApifyClient({ token });
 }
 
-export function buildActorInput({ searchStrings, maxPlacesPerSearch }) {
+export function buildActorInput({
+  searchStrings,
+  maxPlacesPerSearch,
+  maxReviewsPerPlace = config.maxReviewsPerPlace,
+}) {
   const input = {
     searchStringsArray: searchStrings,
     locationQuery: config.locationQuery,
@@ -24,8 +28,8 @@ export function buildActorInput({ searchStrings, maxPlacesPerSearch }) {
     scrapeContacts: config.contactsEnrichment,
   };
 
-  if (config.maxReviewsPerPlace > 0) {
-    input.maxReviews = config.maxReviewsPerPlace;
+  if (maxReviewsPerPlace > 0) {
+    input.maxReviews = maxReviewsPerPlace;
     input.reviewsSort = 'newest';
     input.reviewsOrigin = 'google';
     input.scrapeReviewsPersonalData = false;

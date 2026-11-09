@@ -6,3 +6,5 @@ node_modules/
 .commandcode/
 .admin-token
 /site/data/backups/
+/site/studios/
+/site/sitemap.xml

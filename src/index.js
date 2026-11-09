@@ -3,18 +3,50 @@ import path from 'node:path';
 import fs from 'node:fs/promises';
 import { config } from './config.js';
 import { createClient, runActor, buildActorInput, fetchDatasetItems } from './apify.js';
-import { normalizePlace, mergePlace } from './normalize.js';
+import { dedupePlaces } from './dedupe.js';
+import { findPossibleDuplicates } from './data-quality.js';
+import { estimateRunCost } from './cost.js';
 import { relevanceOf } from './relevance.js';
 import { enrichPlace } from './enrich.js';
 import { classifyAge, cutoffDate, ageStatusLabel, AGE_STATUS, AGE_ORDER } from './age.js';
 import { loadCache, saveCache } from './cache.js';
 import { exportWorkbook } from './export.js';
-import { log, mapLimit, parseArgs } from './utils.js';
+import { log, mapLimit, parseArgs, setLogFile } from './utils.js';
 
 const args = parseArgs(process.argv.slice(2));
 const generatedAt = new Date();
+const runStamp = generatedAt.toISOString().replace(/[:.]/g, '-');
 const cutoff = cutoffDate(generatedAt);
-const targetCount = Number(args.limit ?? config.targetCount);
+
+function positiveInt(value, label, fallback) {
+  if (value === undefined) return fallback;
+  const parsed = Number(value);
+  if (!Number.isInteger(parsed) || parsed <= 0) {
+    throw new Error(`${label} harus bilangan bulat positif.`);
+  }
+  return parsed;
+}
+
+function nonNegativeInt(value, label, fallback) {
+  if (value === undefined) return fallback;
+  const parsed = Number(value);
+  if (!Number.isInteger(parsed) || parsed < 0) {
+    throw new Error(`${label} harus bilangan bulat >= 0.`);
+  }
+  return parsed;
+}
+
+const targetCount = positiveInt(args.limit, '--limit', config.targetCount);
+const maxPlacesPerSearch = positiveInt(
+  args['max-per-search'],
+  '--max-per-search',
+  config.maxPlacesPerSearch,
+);
+const maxReviewsPerPlace = nonNegativeInt(
+  args['max-reviews'],
+  '--max-reviews',
+  config.maxReviewsPerPlace,
+);
 const enrichmentEnabled =
   config.enrichment.enabled && args['no-enrich'] !== true && args['no-age'] !== true;
 
@@ -28,22 +60,10 @@ function resolveKeywords() {
   return config.searchStrings;
 }
 
-function dedupePlaces(rawItems) {
-  const byKey = new Map();
-  for (const item of rawItems) {
-    const place = normalizePlace(item);
-    if (!place.name) continue;
-    const key = place.placeId || `${place.name.toLowerCase()}|${place.address.toLowerCase()}`;
-    byKey.set(key, byKey.has(key) ? mergePlace(byKey.get(key), place) : place);
-  }
-  return [...byKey.values()];
-}
-
 async function saveRaw(items) {
   const dir = path.resolve(config.outputDir);
   await fs.mkdir(dir, { recursive: true });
-  const stamp = generatedAt.toISOString().replace(/[:.]/g, '-');
-  const filePath = path.join(dir, `raw-${stamp}.json`);
+  const filePath = path.join(dir, `raw-${runStamp}.json`);
   await fs.writeFile(filePath, JSON.stringify(items, null, 2));
   log(`Data mentah disimpan ke ${filePath} (bisa dipakai ulang dengan --input).`);
   return filePath;
@@ -76,8 +96,8 @@ async function collect({ searchStrings, maxPlacesPerSearch }) {
         datasetId: '-',
         keywords: searchStrings,
         maxPlacesPerSearch,
-        maxReviewsPerPlace: config.maxReviewsPerPlace,
-        reviewsSort: config.maxReviewsPerPlace > 0 ? 'newest' : '-',
+        maxReviewsPerPlace,
+        reviewsSort: maxReviewsPerPlace > 0 ? 'newest' : '-',
         contactsEnrichment: config.contactsEnrichment,
         enrichmentEnabled,
       },
@@ -85,7 +105,7 @@ async function collect({ searchStrings, maxPlacesPerSearch }) {
   }
 
   const client = createClient(process.env.APIFY_TOKEN);
-  const input = buildActorInput({ searchStrings, maxPlacesPerSearch });
+  const input = buildActorInput({ searchStrings, maxPlacesPerSearch, maxReviewsPerPlace });
   log(
     `Menjalankan actor ${config.actorId}: ${searchStrings.length} keyword, maksimal ${maxPlacesPerSearch} place per keyword, lokasi "${config.locationQuery}", batas biaya $${config.maxTotalChargeUsd}.`,
   );
@@ -126,8 +146,8 @@ async function collect({ searchStrings, maxPlacesPerSearch }) {
       maxTotalChargeUsd: config.maxTotalChargeUsd,
       keywords: searchStrings,
       maxPlacesPerSearch,
-      maxReviewsPerPlace: config.maxReviewsPerPlace,
-      reviewsSort: config.maxReviewsPerPlace > 0 ? 'newest' : '-',
+      maxReviewsPerPlace,
+      reviewsSort: maxReviewsPerPlace > 0 ? 'newest' : '-',
       contactsEnrichment: config.contactsEnrichment,
       enrichmentEnabled,
     },
@@ -167,14 +187,37 @@ function report(finalList, relevant) {
 }
 
 async function main() {
+  await setLogFile(path.resolve(config.outputDir, `run-${runStamp}.log`));
   log(
     `Mulai. Target ${targetCount} studio desain/branding di ${config.locationQuery}, minimal ${config.minYearsOperating} tahun (batas: ${cutoff
           .toISOString()
           .slice(0, 10)}).`,
   );
+  log(`Log run: ${path.resolve(config.outputDir, `run-${runStamp}.log`)}`);
 
   const searchStrings = resolveKeywords();
-  const maxPlacesPerSearch = Number(args['max-per-search'] ?? config.maxPlacesPerSearch);
+  if (searchStrings.length === 0) {
+    throw new Error('Daftar keyword kosong. Isi --keywords atau config.searchStrings.');
+  }
+
+  if (args['dry-run'] === true) {
+    const estimate = estimateRunCost({
+      keywords: searchStrings.length,
+      maxPlacesPerSearch,
+      maxReviewsPerPlace,
+      contactsEnrichment: config.contactsEnrichment,
+    });
+    log('--- Estimasi biaya (dry run, Apify tidak dipanggil) ---');
+    log(`Place maksimum: ${estimate.places}`);
+    log(
+      `Perkiraan total: $${estimate.total.toFixed(4)} ($${estimate.perPlace.toFixed(4)}/place)`,
+    );
+    log(
+      `Rincian: base $${estimate.base.toFixed(4)}, detail $${estimate.details.toFixed(4)}, kontak $${estimate.contacts.toFixed(4)}, review $${estimate.reviews.toFixed(4)}`,
+    );
+    log(`Batas biaya run: $${config.maxTotalChargeUsd}`);
+    return;
+  }
 
   const { rawItems, runMeta } = await collect({ searchStrings, maxPlacesPerSearch });
   log(`Hasil mentah: ${rawItems.length} place.`);
@@ -182,6 +225,12 @@ async function main() {
 
   const candidates = dedupePlaces(rawItems);
   log(`Unik setelah dedupe: ${candidates.length} kandidat.`);
+  const possibleDuplicates = findPossibleDuplicates(candidates);
+  if (possibleDuplicates.length > 0) {
+    log(
+      `Kemungkinan duplikat tersisa: ${possibleDuplicates.length} kelompok (periksa sheet "Semua Kandidat" / npm run check:data).`,
+    );
+  }
 
   for (const candidate of candidates) {
     candidate.relevance = relevanceOf(candidate);
@@ -219,7 +268,11 @@ async function main() {
 
   const filePath = await exportWorkbook({
     generatedAt,
-    runMeta: { ...runMeta, locationQuery: config.locationQuery },
+    runMeta: {
+      ...runMeta,
+      locationQuery: config.locationQuery,
+      logFile: path.resolve(config.outputDir, `run-${runStamp}.log`),
+    },
     searchStrings,
     targetCount,
     minYears: config.minYearsOperating,

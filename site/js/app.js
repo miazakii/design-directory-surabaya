@@ -1,3 +1,5 @@
+import * as maplibregl from '../vendor/maplibre/maplibre-gl.mjs';
+
 (async () => {
   const mapEl = document.getElementById('map');
   const searchEl = document.getElementById('search');
@@ -111,21 +113,51 @@
     };
   }
 
-  const map = new maplibregl.Map({
-    container: mapEl,
-    style: 'https://tiles.openfreemap.org/styles/positron',
-    center: [112.745, -7.275],
-    zoom: 12,
-    attributionControl: false,
-  });
+  let map = null;
+  let hoverPopup = null;
+  const prefersReducedMotion = window.matchMedia?.('(prefers-reduced-motion: reduce)').matches ?? false;
 
-  map.addControl(new maplibregl.NavigationControl({ visualizePitch: true }), 'top-right');
-  map.addControl(new maplibregl.AttributionControl({
-    compact: true,
-    customAttribution: '© <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> · © <a href="https://openfreemap.org">OpenFreeMap</a>',
-  }), 'bottom-right');
+  try {
+    if (!maplibregl.Map) throw new Error('MapLibre tidak tersedia.');
+    map = new maplibregl.Map({
+      container: mapEl,
+      style: 'https://tiles.openfreemap.org/styles/positron',
+      center: [112.745, -7.275],
+      zoom: 12,
+      attributionControl: false,
+    });
 
-  const hoverPopup = new maplibregl.Popup({ closeButton: false, closeOnClick: false, offset: 12 });
+    map.addControl(new maplibregl.NavigationControl({ visualizePitch: true }), 'top-right');
+    map.addControl(
+      new maplibregl.AttributionControl({
+        compact: true,
+        customAttribution:
+          '© <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> · © <a href="https://openfreemap.org">OpenFreeMap</a>',
+      }),
+      'bottom-right',
+    );
+
+    hoverPopup = new maplibregl.Popup({ closeButton: false, closeOnClick: false, offset: 12 });
+  } catch (error) {
+    console.error(error);
+    if (mapEl) {
+      mapEl.innerHTML =
+        '<div class="list-empty" style="position:absolute;inset:0;display:grid;place-items:center;padding:24px;">Peta tidak dapat dimuat. Daftar studio tetap bisa digunakan.</div>';
+    }
+    map = null;
+    hoverPopup = null;
+  }
+
+  function moveMap(center, zoom, mode = 'fly') {
+    if (!map) return;
+    if (prefersReducedMotion) {
+      map.jumpTo({ center, zoom });
+    } else if (mode === 'ease') {
+      map.easeTo({ center, zoom });
+    } else {
+      map.flyTo({ center, zoom });
+    }
+  }
 
   function matches(studio) {
     if (activeGroup && studio.group !== activeGroup) return false;
@@ -150,6 +182,7 @@
   }
 
   function updateMapData() {
+    if (!map) return;
     const source = map.getSource('studios');
     if (source) source.setData(featureCollection());
   }
@@ -169,105 +202,113 @@
     history.replaceState(null, '', `${window.location.pathname}${queryString ? `?${queryString}` : ''}`);
   }
 
-  map.on('load', () => {
-    map.addSource('studios', {
-      type: 'geojson',
-      data: featureCollection(),
-      cluster: true,
-      clusterMaxZoom: 14,
-      clusterRadius: 50,
-    });
-
-    map.addLayer({
-      id: 'clusters',
-      type: 'circle',
-      source: 'studios',
-      filter: ['has', 'point_count'],
-      paint: {
-        'circle-color': ['step', ['get', 'point_count'], '#E63946', 10, '#E76F51', 50, '#9B5DE5'],
-        'circle-radius': ['step', ['get', 'point_count'], 16, 10, 21, 50, 27],
-        'circle-stroke-width': 2,
-        'circle-stroke-color': '#ffffff',
-        'circle-opacity': 0.92,
-      },
-    });
-
-    map.addLayer({
-      id: 'cluster-count',
-      type: 'symbol',
-      source: 'studios',
-      filter: ['has', 'point_count'],
-      layout: {
-        'text-field': ['get', 'point_count_abbreviated'],
-        'text-font': ['Noto Sans Regular'],
-        'text-size': 12,
-      },
-      paint: { 'text-color': '#ffffff' },
-    });
-
-    map.addLayer({
-      id: 'studios',
-      type: 'circle',
-      source: 'studios',
-      filter: ['!', ['has', 'point_count']],
-      paint: {
-        'circle-radius': 7,
-        'circle-color': ['get', 'color'],
-        'circle-stroke-width': 2,
-        'circle-stroke-color': '#ffffff',
-      },
-    });
-
-    map.on('click', 'clusters', (event) => {
-      const feature = event.features[0];
-      const source = map.getSource('studios');
-      if (!source) return;
-      source.getClusterExpansionZoom(feature.properties.cluster_id, (error, zoom) => {
-        if (error) return;
-        map.easeTo({ center: feature.geometry.coordinates, zoom });
+  if (map) {
+    map.on('load', () => {
+      map.addSource('studios', {
+        type: 'geojson',
+        data: featureCollection(),
+        cluster: true,
+        clusterMaxZoom: 14,
+        clusterRadius: 50,
       });
-    });
 
-    map.on('click', 'studios', (event) => {
-      const feature = event.features[0];
-      const studio = studios.find((entry) => entry.id === feature.properties.id);
-      if (studio) openDetail(studio);
-      map.flyTo({ center: feature.geometry.coordinates, zoom: 15 });
-    });
-
-    map.on('mouseenter', 'studios', (event) => {
-      map.getCanvas().style.cursor = 'pointer';
-      hoverPopup
-        .setLngLat(event.features[0].geometry.coordinates)
-        .setHTML(esc(event.features[0].properties.name))
-        .addTo(map);
-    });
-
-    map.on('mouseleave', 'studios', () => {
-      map.getCanvas().style.cursor = '';
-      hoverPopup.remove();
-    });
-
-    map.on('mouseenter', 'clusters', (event) => {
-      map.getCanvas().style.cursor = 'pointer';
-      hoverPopup
-        .setLngLat(event.features[0].geometry.coordinates)
-        .setHTML(`${Number(event.features[0].properties.point_count) || 0} studio`)
-        .addTo(map);
-    });
-
-    map.on('mouseleave', 'clusters', () => {
-      map.getCanvas().style.cursor = '';
-      hoverPopup.remove();
-    });
-
-    if (initialStudio && hasCoords(initialStudio)) {
-      map.flyTo({
-        center: [Number(initialStudio.longitude), Number(initialStudio.latitude)],
-        zoom: 15,
+      map.addLayer({
+        id: 'clusters',
+        type: 'circle',
+        source: 'studios',
+        filter: ['has', 'point_count'],
+        paint: {
+          'circle-color': ['step', ['get', 'point_count'], '#E63946', 10, '#E76F51', 50, '#9B5DE5'],
+          'circle-radius': ['step', ['get', 'point_count'], 16, 10, 21, 50, 27],
+          'circle-stroke-width': 2,
+          'circle-stroke-color': '#ffffff',
+          'circle-opacity': 0.92,
+        },
       });
-    }
-  });
+
+      map.addLayer({
+        id: 'cluster-count',
+        type: 'symbol',
+        source: 'studios',
+        filter: ['has', 'point_count'],
+        layout: {
+          'text-field': ['get', 'point_count_abbreviated'],
+          'text-font': ['Noto Sans Regular'],
+          'text-size': 12,
+        },
+        paint: { 'text-color': '#ffffff' },
+      });
+
+      map.addLayer({
+        id: 'studios',
+        type: 'circle',
+        source: 'studios',
+        filter: ['!', ['has', 'point_count']],
+        paint: {
+          'circle-radius': 7,
+          'circle-color': ['get', 'color'],
+          'circle-stroke-width': 2,
+          'circle-stroke-color': '#ffffff',
+        },
+      });
+
+      map.on('click', 'clusters', (event) => {
+        const feature = event.features[0];
+        const source = map.getSource('studios');
+        if (!source) return;
+        let handled = false;
+        const handleZoom = (zoom) => {
+          if (handled) return;
+          handled = true;
+          moveMap(feature.geometry.coordinates, zoom, 'ease');
+        };
+        // MapLibre v4 memakai callback; v6 mengembalikan Promise.
+        const result = source.getClusterExpansionZoom(feature.properties.cluster_id, (error, zoom) => {
+          if (!error) handleZoom(zoom);
+        });
+        if (result && typeof result.then === 'function') {
+          result.then(handleZoom).catch(() => {});
+        }
+      });
+
+      map.on('click', 'studios', (event) => {
+        const feature = event.features[0];
+        const studio = studios.find((entry) => entry.id === feature.properties.id);
+        if (studio) openDetail(studio);
+        moveMap(feature.geometry.coordinates, 15);
+      });
+
+      map.on('mouseenter', 'studios', (event) => {
+        map.getCanvas().style.cursor = 'pointer';
+        hoverPopup
+          .setLngLat(event.features[0].geometry.coordinates)
+          .setHTML(esc(event.features[0].properties.name))
+          .addTo(map);
+      });
+
+      map.on('mouseleave', 'studios', () => {
+        map.getCanvas().style.cursor = '';
+        hoverPopup.remove();
+      });
+
+      map.on('mouseenter', 'clusters', (event) => {
+        map.getCanvas().style.cursor = 'pointer';
+        hoverPopup
+          .setLngLat(event.features[0].geometry.coordinates)
+          .setHTML(`${Number(event.features[0].properties.point_count) || 0} studio`)
+          .addTo(map);
+      });
+
+      map.on('mouseleave', 'clusters', () => {
+        map.getCanvas().style.cursor = '';
+        hoverPopup.remove();
+      });
+
+      if (initialStudio && hasCoords(initialStudio)) {
+        moveMap([Number(initialStudio.longitude), Number(initialStudio.latitude)], 15);
+      }
+    });
+  }
 
   function buildFilters() {
     const counts = new Map();
@@ -449,23 +490,39 @@
     const studio = studios.find((entry) => entry.id === item.dataset.id);
     if (!studio) return;
     if (hasCoords(studio)) {
-      map.flyTo({ center: [Number(studio.longitude), Number(studio.latitude)], zoom: 15 });
+      moveMap([Number(studio.longitude), Number(studio.latitude)], 15);
     }
     openDetail(studio);
-    if (window.innerWidth <= 860) document.body.classList.remove('sidebar-open');
+    if (window.innerWidth <= 860) setSidebar(false);
   });
 
-  dialogClose.addEventListener('click', () => dialog.close());
+  function closeDialog() {
+    currentStudioId = null;
+    syncUrl();
+    dialog.close();
+  }
+
+  dialogClose.addEventListener('click', closeDialog);
   dialog.addEventListener('click', (event) => {
-    if (event.target === dialog) dialog.close();
+    if (event.target === dialog) closeDialog();
   });
   dialog.addEventListener('close', () => {
     currentStudioId = null;
     syncUrl();
   });
 
-  openSidebar.addEventListener('click', () => document.body.classList.add('sidebar-open'));
-  closeSidebar.addEventListener('click', () => document.body.classList.remove('sidebar-open'));
+  function setSidebar(open) {
+    document.body.classList.toggle('sidebar-open', open);
+    openSidebar.setAttribute('aria-expanded', String(open));
+  }
+
+  openSidebar.addEventListener('click', () => setSidebar(true));
+  closeSidebar.addEventListener('click', () => setSidebar(false));
+  window.addEventListener('keydown', (event) => {
+    if (event.key === 'Escape' && document.body.classList.contains('sidebar-open')) {
+      setSidebar(false);
+    }
+  });
 
   buildFilters();
   buildQuickFilters();
