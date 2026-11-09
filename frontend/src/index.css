@@ -1,0 +1,163 @@
+@font-face {
+  font-family: 'Host Grotesk';
+  src: url('./assets/fonts/host-grotesk-latin-ext.woff2') format('woff2');
+  font-weight: 300 800;
+  font-style: normal;
+  font-display: swap;
+  unicode-range: U+0100-024F, U+1E00-1EFF, U+20A0-20CF, U+2113, U+2C60-2C7F, U+A720-A7FF;
+}
+
+@font-face {
+  font-family: 'Host Grotesk';
+  src: url('./assets/fonts/host-grotesk-latin.woff2') format('woff2');
+  font-weight: 300 800;
+  font-style: normal;
+  font-display: swap;
+  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC,
+    U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF,
+    U+FFFD;
+}
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    --background: 38 33% 98%;
+    --foreground: 24 12% 9%;
+    --card: 0 0% 100%;
+    --card-foreground: 24 12% 9%;
+    --popover: 0 0% 100%;
+    --popover-foreground: 24 12% 9%;
+    --primary: 24 12% 9%;
+    --primary-foreground: 38 33% 98%;
+    --secondary: 36 20% 94%;
+    --secondary-foreground: 24 12% 12%;
+    --muted: 36 18% 94%;
+    --muted-foreground: 24 7% 42%;
+    --accent: 36 24% 92%;
+    --accent-foreground: 24 12% 12%;
+    --destructive: 0 72% 51%;
+    --destructive-foreground: 0 0% 98%;
+    --border: 30 14% 89%;
+    --input: 30 14% 87%;
+    --ring: 356 72% 56%;
+    --brand: 356 72% 56%;
+    --brand-foreground: 0 0% 100%;
+    --radius: 0.85rem;
+  }
+
+  .dark {
+    --background: 24 10% 7%;
+    --foreground: 38 24% 96%;
+    --card: 24 9% 9%;
+    --card-foreground: 38 24% 96%;
+    --popover: 24 9% 9%;
+    --popover-foreground: 38 24% 96%;
+    --primary: 38 24% 96%;
+    --primary-foreground: 24 10% 7%;
+    --secondary: 24 8% 14%;
+    --secondary-foreground: 38 24% 96%;
+    --muted: 24 8% 14%;
+    --muted-foreground: 30 8% 66%;
+    --accent: 24 8% 16%;
+    --accent-foreground: 38 24% 96%;
+    --destructive: 0 62% 44%;
+    --destructive-foreground: 0 0% 98%;
+    --border: 24 8% 18%;
+    --input: 24 8% 20%;
+    --ring: 356 72% 62%;
+    --brand: 356 72% 62%;
+  }
+
+  * {
+    @apply border-border;
+  }
+
+  html {
+    -webkit-text-size-adjust: 100%;
+    scroll-behavior: smooth;
+  }
+
+  body {
+    @apply bg-background text-foreground antialiased;
+    min-height: 100dvh;
+    font-feature-settings: 'ss01' on, 'ss02' on, 'cv01' on;
+  }
+
+  ::selection {
+    background: hsl(var(--brand) / 0.18);
+  }
+
+  :focus-visible {
+    @apply outline-none ring-2 ring-ring ring-offset-2 ring-offset-background;
+  }
+}
+
+@layer utilities {
+  .text-balance {
+    text-wrap: balance;
+  }
+
+  .bg-grid {
+    background-image:
+      linear-gradient(to right, hsl(var(--foreground) / 0.045) 1px, transparent 1px),
+      linear-gradient(to bottom, hsl(var(--foreground) / 0.045) 1px, transparent 1px);
+    background-size: 42px 42px;
+  }
+
+  .bg-hero-glow {
+    background:
+      radial-gradient(60rem 40rem at 70% -10%, hsl(var(--brand) / 0.1), transparent 60%),
+      radial-gradient(40rem 30rem at -10% 20%, hsl(var(--foreground) / 0.05), transparent 60%);
+  }
+
+  .safe-bottom {
+    padding-bottom: env(safe-area-inset-bottom);
+  }
+}
+
+/* ---------- MapLibre ---------- */
+
+.maplibregl-map {
+  font-family: 'Host Grotesk', Inter, system-ui, sans-serif;
+}
+
+.maplibregl-popup-content {
+  @apply rounded-lg border bg-card px-3 py-2 text-sm text-card-foreground shadow-soft;
+  padding: 8px 12px !important;
+}
+
+.maplibregl-popup-close-button {
+  @apply rounded-sm text-muted-foreground;
+}
+
+.maplibregl-ctrl-group {
+  @apply overflow-hidden rounded-lg border bg-card shadow-soft;
+}
+
+.maplibregl-ctrl-group button {
+  @apply bg-card;
+}
+
+.maplibregl-ctrl-attrib {
+  @apply !bg-card/90 !text-[11px] !text-muted-foreground;
+}
+
+.maplibregl-ctrl-attrib a {
+  @apply !text-foreground;
+}
+
+/* ---------- Reduced motion ---------- */
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    scroll-behavior: auto !important;
+    transition-duration: 0.01ms !important;
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+  }
+}

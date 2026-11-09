@@ -7,7 +7,8 @@ const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const ROOT = path.resolve(__dirname, '..', '..');
 const SITE_DIR = path.join(ROOT, 'site');
 const DATA_FILE = path.join(SITE_DIR, 'data', 'directory.json');
-const STUDIOS_DIR = path.join(SITE_DIR, 'studios');
+const OUT_DIR = path.resolve(ROOT, process.env.SEO_OUT_DIR || 'dist');
+const STUDIOS_DIR = path.join(OUT_DIR, 'studios');
 const SITE_URL = (
   process.env.SITE_URL ||
   process.env.URL ||
@@ -68,8 +69,11 @@ function socialLinks(studio) {
 
 function studioPage(studio, directory) {
   const title = `${studio.name} — Design Directory Surabaya`;
+  const address = String(studio.address || '').trim();
+  const city = String(studio.city || '').trim();
+  const citySuffix = city && !address.toLowerCase().includes(city.toLowerCase()) ? city : '';
   const description = truncate(
-    [studio.category, studio.address, studio.city].filter(Boolean).join(' · ') ||
+    [studio.category, address, citySuffix].filter(Boolean).join(' · ') ||
       'Profil studio desain di Surabaya.',
   );
   const canonical = studioUrl(studio.id);
@@ -233,14 +237,14 @@ function main() {
   const sitemap = `<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n${urls
     .map((url) => `  <url><loc>${esc(url)}</loc><lastmod>${lastmod}</lastmod></url>`)
     .join('\n')}\n</urlset>\n`;
-  fs.writeFileSync(path.join(SITE_DIR, 'sitemap.xml'), sitemap, 'utf8');
+  fs.writeFileSync(path.join(OUT_DIR, 'sitemap.xml'), sitemap, 'utf8');
   fs.writeFileSync(
-    path.join(SITE_DIR, 'robots.txt'),
+    path.join(OUT_DIR, 'robots.txt'),
     `User-agent: *\nAllow: /\nDisallow: /admin.html\n\nSitemap: ${SITE_URL}/sitemap.xml\n`,
     'utf8',
   );
 
-  console.log(`SEO: ${studios.length} halaman studio, sitemap, dan robots.txt -> site/`);
+  console.log(`SEO: ${studios.length} halaman studio, sitemap, dan robots.txt -> ${path.relative(ROOT, OUT_DIR)}/`);
 }
 
 main();

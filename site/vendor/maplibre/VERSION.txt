@@ -1,2 +1,0 @@
-maplibre-gl 6.17.0
-Disalin dari node_modules oleh npm run vendor:sync.

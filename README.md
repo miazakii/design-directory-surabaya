@@ -76,10 +76,17 @@ node src/index.js --dry-run --max-reviews 0 --max-per-search 30
 
 ## Website & admin lokal
 
+Website memakai **React + Vite + Tailwind CSS + komponen shadcn/ui**. Source ada di `frontend/`, build menghasilkan `dist/`.
+
 `site/data/directory.json` adalah **sumber data kanonis website**. Admin lokal mengedit file ini, bukan CSV.
 
 ```bash
-npm run admin
+npm run dev        # dev server React di http://localhost:5173
+npm run build      # build React + halaman SEO ke dist/
+npm run preview    # preview hasil build
+npm run serve:site # build lalu preview di http://localhost:8000
+
+npm run admin      # build React, lalu jalankan admin lokal
 # buka URL lengkap dengan #t=... yang dicetak di terminal
 ```
 
@@ -103,18 +110,20 @@ Perintah impor membuat backup di `site/data/backups/` dan mempertahankan `groups
 npm test                 # unit + smoke test (Node test runner)
 npm run validate:site    # validasi schema site/data/directory.json
 npm run check:data       # laporan duplikat, kontak, koordinat, status usia
-npm run build:seo        # generate halaman studio, sitemap.xml, robots.txt
+npm run build            # build React + halaman studio, sitemap.xml, robots.txt ke dist/
+npm run build:web        # build React saja
+npm run build:seo        # halaman SEO saja (membaca site/data, menulis ke dist/)
 # SITE_URL=https://domain-anda.example npm run build:seo  # override URL kanonis
-npm run vendor:sync      # salin MapLibre dari node_modules ke site/vendor
 ```
 
-Workflow GitHub Pages menjalankan `npm ci`, `npm test`, `npm run validate:site`, dan `npm run build:seo` sebelum deploy. Kalau salah satu gagal, situs tidak di-deploy. Netlify juga menjalankan `build:seo` sebelum publish.
+Workflow GitHub Pages menjalankan `npm ci`, `npm test`, `npm run validate:site`, dan `npm run build` sebelum deploy `dist/`. Kalau salah satu gagal, situs tidak di-deploy. Netlify juga menjalankan `npm run build` dan publish `dist/`.
 
 Website peta mendukung filter cepat `Terverifikasi` dan `Punya kontak`, serta deep link per studio:
 
 ```text
 map.html?studio=<place-id>
 map.html?group=agency&verified=1
+map.html?q=branding&contact=1
 ```
 
 ## Opsi CLI
@@ -218,7 +227,8 @@ Tingkat verifikasi usia ≈ 64% dari kandidat relevan. Untuk mencapai 100 studio
 
 - Kode project ini dilisensikan under MIT — lihat `LICENSE`.
 - Data direktori (nama usaha, alamat, kontak, dan sejenisnya) **tidak** termasuk lisensi MIT. Data disediakan untuk referensi dan tidak boleh didistribusikan ulang secara massal tanpa izin.
-- MapLibre GL JS di-self-host di `site/vendor/maplibre/` (lisensi BSD-3-Clause, lihat file `LICENSE.txt` di folder tersebut).
+- MapLibre GL JS diimpor dari npm dan dibundel Vite ke `dist/assets/` (lisensi BSD-3-Clause).
+- Komponen UI memakai shadcn/ui, Radix UI, dan Lucide (lisensi MIT/ISC).
 - Font Host Grotesk di-self-host di `site/fonts/` (SIL Open Font License 1.1, lihat `site/fonts/OFL.txt`).
 - Peta memakai tile OpenFreeMap dan data OpenStreetMap.
 

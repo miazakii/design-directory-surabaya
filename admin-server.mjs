@@ -12,6 +12,7 @@ const execFileAsync = promisify(execFile);
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const ROOT = __dirname;
 const SITE_DIR = path.join(ROOT, 'site');
+const DIST_DIR = path.join(ROOT, 'dist');
 const DATA_FILE = path.join(SITE_DIR, 'data', 'directory.json');
 const TOKEN_FILE = path.join(ROOT, '.admin-token');
 const PORT = Number(process.env.ADMIN_PORT || process.argv[2] || 8787);
@@ -32,6 +33,8 @@ const MIME = {
   '.jpg': 'image/jpeg',
   '.jpeg': 'image/jpeg',
   '.webp': 'image/webp',
+  '.woff2': 'font/woff2',
+  '.map': 'application/json; charset=utf-8',
 };
 
 const ADMIN_CSP = [
@@ -118,17 +121,18 @@ function resolveStaticPath(pathname) {
   }
 
   const relative = decoded === '/' ? 'admin.html' : decoded.replace(/^\/+/, '');
-  const filePath = path.resolve(SITE_DIR, relative);
-  const relativeToSite = path.relative(SITE_DIR, filePath);
+  const filePath = path.resolve(DIST_DIR, relative);
+  const relativeToDist = path.relative(DIST_DIR, filePath);
 
-  if (!relativeToSite || relativeToSite.startsWith('..') || path.isAbsolute(relativeToSite)) {
+  if (!relativeToDist || relativeToDist.startsWith('..') || path.isAbsolute(relativeToDist)) {
     return null;
   }
   return filePath;
 }
 
 function serveStatic(req, res, pathname) {
-  const filePath = resolveStaticPath(pathname);
+  const isData = pathname === '/data/directory.json';
+  const filePath = isData ? DATA_FILE : resolveStaticPath(pathname);
   if (!filePath) {
     res.writeHead(403, baseHeaders({ 'Content-Type': 'text/plain; charset=utf-8' }));
     res.end('Forbidden');
@@ -143,7 +147,7 @@ function serveStatic(req, res, pathname) {
     }
 
     const ext = path.extname(filePath).toLowerCase();
-    const isAdminPage = pathname === '/' || pathname === '/admin.html';
+    const isAdminPage = !isData && (pathname === '/' || pathname === '/admin.html');
     const headers = baseHeaders({
       'Content-Type': MIME[ext] || 'application/octet-stream',
       'Cache-Control': ext === '.html' ? 'no-store' : 'no-cache',
@@ -340,6 +344,11 @@ const server = http.createServer(async (req, res) => {
   res.writeHead(405, baseHeaders());
   res.end();
 });
+
+if (!fs.existsSync(path.join(DIST_DIR, 'admin.html'))) {
+  console.error('dist/admin.html belum ada. Jalankan `npm run build:web` lebih dulu.');
+  process.exit(1);
+}
 
 server.listen(PORT, HOST, () => {
   console.log(`Admin lokal berjalan di http://${HOST}:${PORT}/admin.html`);
