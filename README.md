@@ -78,11 +78,15 @@ node src/index.js --dry-run --max-reviews 0 --max-per-search 30
 
 Website memakai **React + Vite + Tailwind CSS + komponen shadcn/ui**. Source ada di `frontend/`, build menghasilkan `dist/`.
 
-`site/data/directory.json` adalah **sumber data kanonis website**. Admin lokal mengedit file ini, bukan CSV.
+Ada dua sumber data kanonis:
+
+- `site/data/directory.json` — studio, kategori, dan catatan data.
+- `site/data/content.json` — konten landing, navigasi, footer, halaman privasi, metadata SEO, dan pengaturan tampilan.
+- `site/media/` — gambar yang diunggah lewat dashboard.
 
 ```bash
 npm run dev        # dev server React di http://localhost:5173
-npm run build      # build React + halaman SEO ke dist/
+npm run build      # build React + metadata + halaman SEO ke dist/
 npm run preview    # preview hasil build
 npm run serve:site # build lalu preview di http://localhost:8000
 
@@ -90,9 +94,33 @@ npm run admin      # build React, lalu jalankan admin lokal
 # buka URL lengkap dengan #t=... yang dicetak di terminal
 ```
 
+### Dashboard admin
+
+Dashboard lokal sekarang mencakup:
+
+- **Ringkasan** — statistik, kualitas data, duplikat, review queue, status draft/commit.
+- **Studio** — CRUD, filter review/kontak/koordinat, pencarian, coordinate picker peta.
+- **Kategori** — key, label, warna, catatan data.
+- **Konten** — hero landing, snapshot, kategori, tentang, navigasi, CTA, privasi, footer.
+- **SEO** — title, description, canonical, OG image, preview hasil pencarian, character counter.
+- **Media** — unggah PNG/JPEG/WebP, jadikan OG image, salin URL, hapus.
+- **Riwayat** — status repo, daftar commit, muat versi lama sebagai draft.
+- **Pengaturan** — tampilkan rating/jam buka/tahun, posisi awal peta.
+
+Alur kerja:
+
+```text
+Edit → Simpan draft → Preview → Publish
+```
+
+- **Draft** disimpan di `data/drafts/` (gitignored), jadi data live belum berubah.
+- **Preview** menulis draft ke `dist/data/` lalu membuka situs lokal.
+- **Publish** memvalidasi, menulis `site/data/*.json`, commit **hanya** file data + `site/media`, lalu push bila `ADMIN_AUTO_PUSH` aktif.
+- **Riwayat** memungkinkan memuat snapshot lama sebagai draft untuk ditinjau sebelum publish.
+
 - Server hanya bind ke `127.0.0.1` dan API membutuhkan token.
 - Token dibuat otomatis dan disimpan di `.admin-token` (mode `0600`, gitignored).
-- Simpan perubahan akan commit **hanya** `site/data/directory.json`.
+- Publish akan commit **hanya** `site/data/directory.json`, `site/data/content.json`, dan `site/media/`.
 - Push ke `origin main` aktif secara default. Set `ADMIN_AUTO_PUSH=false` untuk commit lokal saja.
 - `ADMIN_PORT` mengganti port, `ADMIN_TOKEN` memakai token sendiri (minimal 16 karakter).
 
@@ -110,8 +138,9 @@ Perintah impor membuat backup di `site/data/backups/` dan mempertahankan `groups
 npm test                 # unit + smoke test (Node test runner)
 npm run validate:site    # validasi schema site/data/directory.json
 npm run check:data       # laporan duplikat, kontak, koordinat, status usia
-npm run build            # build React + halaman studio, sitemap.xml, robots.txt ke dist/
+npm run build            # build React + metadata + halaman studio, sitemap, robots ke dist/
 npm run build:web        # build React saja
+npm run build:meta       # tulis title/description/OG dari content.json ke dist/
 npm run build:seo        # halaman SEO saja (membaca site/data, menulis ke dist/)
 # SITE_URL=https://domain-anda.example npm run build:seo  # override URL kanonis
 ```
@@ -228,6 +257,7 @@ Tingkat verifikasi usia ≈ 64% dari kandidat relevan. Untuk mencapai 100 studio
 - Kode project ini dilisensikan under MIT — lihat `LICENSE`.
 - Data direktori (nama usaha, alamat, kontak, dan sejenisnya) **tidak** termasuk lisensi MIT. Data disediakan untuk referensi dan tidak boleh didistribusikan ulang secara massal tanpa izin.
 - MapLibre GL JS diimpor dari npm dan dibundel Vite ke `dist/assets/` (lisensi BSD-3-Clause).
+- Gambar di `site/media/` diunggah oleh pengelola direktori dan ikut di-commit saat publish.
 - Komponen UI memakai shadcn/ui, Radix UI, dan Lucide (lisensi MIT/ISC).
 - Font Host Grotesk di-self-host di `site/fonts/` (SIL Open Font License 1.1, lihat `site/fonts/OFL.txt`).
 - Peta memakai tile OpenFreeMap dan data OpenStreetMap.

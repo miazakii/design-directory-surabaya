@@ -25,11 +25,13 @@ npm run validate:site
 npm run check:data
 ```
 
-Jika mengubah data website, jalankan juga:
+Jika mengubah data atau konten website, jalankan juga:
 
 ```bash
 npm run build
 ```
+
+Konten landing/SEO/privasi ada di `site/data/content.json`. Jangan menaruh copy tersebut langsung di komponen React.
 
 ## Aturan data
 
@@ -39,6 +41,8 @@ npm run build
 - Jangan commit `.env`, `.admin-token`, `data/`, atau file hasil scrape.
 - Jangan mengedit `dist/` secara manual. Ubah source React di `frontend/` lalu jalankan `npm run build`.
 - MapLibre dibundel oleh Vite; tidak ada folder vendor manual.
+- Draft dashboard ada di `data/drafts/` dan tidak boleh di-commit.
+- Media yang diunggah masuk ke `site/media/` dan ikut dipublikasikan lewat dashboard.
 
 ## Gaya kode
 

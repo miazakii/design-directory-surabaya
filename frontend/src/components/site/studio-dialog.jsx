@@ -56,7 +56,7 @@ function ExternalLink({ href, children }) {
   );
 }
 
-export function StudioDialog({ studio, groups, minYears, onOpenChange }) {
+export function StudioDialog({ studio, groups, minYears, onOpenChange, showRatings = true, showOpeningHours = true }) {
   if (!studio) return null;
   const info = groupInfo(groups, studio);
   const rating = ratingText(studio);
@@ -115,8 +115,8 @@ export function StudioDialog({ studio, groups, minYears, onOpenChange }) {
           <div className="space-y-7 p-6">
             <Section title="Ringkasan">
               <Row label="Kategori">{studio.category || info.label}</Row>
-              <Row label="Rating">{rating ? `★ ${rating}` : 'Belum ada rating'}</Row>
-              {hours.length ? (
+              {showRatings ? <Row label="Rating">{rating ? `★ ${rating}` : 'Belum ada rating'}</Row> : null}
+              {showOpeningHours && hours.length ? (
                 <Row label="Jam buka">
                   <span className="inline-flex items-center gap-1.5">
                     <Clock3 className="h-3.5 w-3.5 text-muted-foreground" />
@@ -159,7 +159,7 @@ export function StudioDialog({ studio, groups, minYears, onOpenChange }) {
               ) : null}
             </Section>
 
-            {hours.length ? (
+            {showOpeningHours && hours.length ? (
               <>
                 <Separator />
                 <Section title="Jam buka">

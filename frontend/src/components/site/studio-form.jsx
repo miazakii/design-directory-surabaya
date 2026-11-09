@@ -1,5 +1,6 @@
 import { Trash2 } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
+import { LocationPicker } from '@/components/admin/location-picker';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -161,6 +162,16 @@ export function StudioForm({ studio, data, onChange, onDelete }) {
                   onChange={onChange}
                 />
               ))}
+              {section.title === 'Lokasi & tautan' ? (
+                <LocationPicker
+                  latitude={studio.latitude}
+                  longitude={studio.longitude}
+                  onChange={(latitude, longitude) => {
+                    onChange('latitude', latitude);
+                    onChange('longitude', longitude);
+                  }}
+                />
+              ) : null}
             </div>
           </section>
         ))}

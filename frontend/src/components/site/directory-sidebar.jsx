@@ -39,9 +39,9 @@ function FilterChip({ active, color, label, count, onClick }) {
   );
 }
 
-function StudioListItem({ studio, groups, active, onSelect }) {
+function StudioListItem({ studio, groups, active, onSelect, showRatings, showFoundedYear }) {
   const info = groupInfo(groups, studio);
-  const rating = ratingText(studio);
+  const rating = showRatings ? ratingText(studio) : '';
 
   return (
     <button
@@ -74,7 +74,7 @@ function StudioListItem({ studio, groups, active, onSelect }) {
       <span className="mt-1 flex flex-wrap items-center gap-x-2 gap-y-1 pl-[18px] text-[11px] text-muted-foreground">
         <span className="truncate">{info.label}</span>
         {rating ? <span>★ {rating}</span> : null}
-        {studio.foundedYear ? <span>Est. {studio.foundedYear}</span> : null}
+        {showFoundedYear && studio.foundedYear ? <span>Est. {studio.foundedYear}</span> : null}
       </span>
       <span className="mt-1 block truncate pl-[18px] text-xs text-muted-foreground/85">
         {studio.address || 'Alamat belum tersedia'}
@@ -98,6 +98,8 @@ export function DirectorySidebar({
   selectedId,
   onSelect,
   minYears,
+  showRatings = true,
+  showFoundedYear = true,
 }) {
   const groupMap = buildGroupMap(groups);
   const counts = new Map();
@@ -215,6 +217,8 @@ export function DirectorySidebar({
                 groups={groupMap}
                 active={selectedId === studio.id}
                 onSelect={onSelect}
+                showRatings={showRatings}
+                showFoundedYear={showFoundedYear}
               />
             ))
           ) : (

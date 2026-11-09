@@ -17,7 +17,8 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Separator } from '@/components/ui/separator';
 import { Skeleton } from '@/components/ui/skeleton';
-import { useDirectory } from '@/hooks/use-directory';
+import { useDocumentMeta } from '@/hooks/use-document-meta';
+import { useSiteData } from '@/hooks/use-site-data';
 import { formatDate, isVerified, safeColor } from '@/lib/directory';
 
 function StatCard({ value, label, icon: Icon }) {
@@ -37,7 +38,9 @@ function StatCard({ value, label, icon: Icon }) {
 }
 
 export function LandingPage() {
-  const { data, error, loading } = useDirectory();
+  const { data, content, error, loading } = useSiteData();
+  const landing = content.landing;
+  useDocumentMeta(content.seo.home, content.site.url);
 
   const studios = data?.studios ?? [];
   const groups = data?.groups ?? [];
@@ -52,7 +55,7 @@ export function LandingPage() {
 
   return (
     <div className="min-h-dvh">
-      <SiteHeader className="sticky top-0 z-40 border-b border-border/70 bg-background/85 backdrop-blur" />
+      <SiteHeader content={content} className="sticky top-0 z-40 border-b border-border/70 bg-background/85 backdrop-blur" />
 
       <main id="main">
         <section className="relative overflow-hidden border-b">
@@ -62,23 +65,22 @@ export function LandingPage() {
             <div className="animate-fade-up">
               <Badge variant="outline" className="rounded-full bg-background/80 px-3 py-1">
                 <span className="h-1.5 w-1.5 rounded-full bg-brand" />
-                Direktori terbuka · Surabaya
+                {landing.hero.kicker}
               </Badge>
               <h1 className="mt-6 max-w-4xl text-balance text-5xl font-semibold leading-[0.94] tracking-[-0.055em] sm:text-6xl lg:text-7xl">
-                Peta ekosistem desain <span className="text-brand">Surabaya.</span>
+                {landing.hero.title} <span className="text-brand">{landing.hero.highlight}</span>
               </h1>
               <p className="mt-6 max-w-2xl text-balance text-base leading-relaxed text-muted-foreground sm:text-lg">
-                Studio, agensi, konsultan, dan praktisi desain dalam satu direktori yang bisa dicari,
-                difilter, dan dibaca sebagai jaringan — bukan sekadar daftar.
+                {landing.hero.description}
               </p>
               <div className="mt-8 flex flex-wrap gap-3">
                 <Button asChild size="lg" className="rounded-full">
-                  <a href="map.html">
-                    Jelajahi peta <ArrowRight />
+                  <a href={landing.hero.primary.href}>
+                    {landing.hero.primary.label} <ArrowRight />
                   </a>
                 </Button>
                 <Button asChild size="lg" variant="outline" className="rounded-full bg-background/70">
-                  <a href="#kategori">Lihat kategori</a>
+                  <a href={landing.hero.secondary.href}>{landing.hero.secondary.label}</a>
                 </Button>
               </div>
             </div>
@@ -86,9 +88,9 @@ export function LandingPage() {
             <Card className="relative overflow-hidden border-border/80 bg-card/85 shadow-soft backdrop-blur">
               <CardHeader className="border-b border-border/70 pb-5">
                 <p className="text-xs font-semibold uppercase tracking-[0.18em] text-muted-foreground">
-                  Snapshot direktori
+                  {landing.snapshot.eyebrow}
                 </p>
-                <CardTitle className="text-2xl tracking-tight">Surabaya, dibaca lewat peta.</CardTitle>
+                <CardTitle className="text-2xl tracking-tight">{landing.snapshot.title}</CardTitle>
               </CardHeader>
               <CardContent className="space-y-5 pt-5">
                 <div className="grid grid-cols-3 gap-3">
@@ -107,8 +109,7 @@ export function LandingPage() {
                 <div className="flex items-start gap-3 text-sm text-muted-foreground">
                   <ShieldCheck className="mt-0.5 h-4 w-4 shrink-0 text-foreground" />
                   <p>
-                    Status usia adalah estimasi batas bawah aktivitas, bukan tanggal berdiri resmi.
-                    Data yang belum pasti tetap ditandai agar transparan.
+                    {landing.snapshot.note}
                   </p>
                 </div>
                 <p className="text-xs text-muted-foreground">
@@ -153,12 +154,11 @@ export function LandingPage() {
           <div className="flex flex-col justify-between gap-4 sm:flex-row sm:items-end">
             <div>
               <p className="text-xs font-semibold uppercase tracking-[0.18em] text-muted-foreground">
-                Jelajahi
+                {landing.categories.eyebrow}
               </p>
-              <h2 className="mt-2 text-3xl font-semibold tracking-[-0.04em] sm:text-4xl">Kategori</h2>
+              <h2 className="mt-2 text-3xl font-semibold tracking-[-0.04em] sm:text-4xl">{landing.categories.title}</h2>
               <p className="mt-2 max-w-xl text-sm leading-relaxed text-muted-foreground">
-                Setiap kategori membawa warna dan konteksnya sendiri. Klik untuk membuka peta dengan
-                filter yang sudah aktif.
+                {landing.categories.description}
               </p>
             </div>
             <Button asChild variant="ghost" className="w-fit rounded-full">
@@ -202,39 +202,36 @@ export function LandingPage() {
           <div className="container grid gap-12 py-20 lg:grid-cols-[0.85fr_1.15fr] lg:py-24">
             <div>
               <p className="text-xs font-semibold uppercase tracking-[0.18em] text-muted-foreground">
-                Tentang
+                {landing.about.eyebrow}
               </p>
               <h2 className="mt-2 text-3xl font-semibold tracking-[-0.04em] sm:text-4xl">
-                Komunitas desain dibaca sebagai jaringan.
+                {landing.about.title}
               </h2>
               <p className="mt-4 text-sm leading-relaxed text-muted-foreground">
-                Studio, konsultan, biro iklan, dan praktisi tampil bersamaan sehingga pembaca bisa
-                melihat posisi mereka, siapa yang berada di dekatnya, dan bagaimana ekosistem ini
-                tersusun.
+                {landing.about.body}
               </p>
               <div className="mt-6 grid gap-3">
-                {[
-                  { icon: Search, title: 'Cari & filter', text: 'Temukan studio berdasarkan nama, kategori, atau lokasi.' },
-                  { icon: MapPinned, title: 'Baca lewat peta', text: 'Lihat sebaran dan kedekatan antar studio di Surabaya.' },
-                  { icon: ShieldCheck, title: 'Transparan', text: 'Data yang belum terverifikasi tetap ditandai, bukan dirapikan diam-diam.' },
-                ].map((item) => (
-                  <div key={item.title} className="flex gap-3 rounded-xl border bg-background/70 p-4">
-                    <item.icon className="mt-0.5 h-4 w-4 shrink-0" />
-                    <div>
-                      <p className="text-sm font-medium">{item.title}</p>
-                      <p className="mt-0.5 text-xs leading-relaxed text-muted-foreground">{item.text}</p>
+                {landing.about.points.map((item, index) => {
+                  const Icon = [Search, MapPinned, ShieldCheck][index % 3] || ShieldCheck;
+                  return (
+                    <div key={`${item.title}-${index}`} className="flex gap-3 rounded-xl border bg-background/70 p-4">
+                      <Icon className="mt-0.5 h-4 w-4 shrink-0" />
+                      <div>
+                        <p className="text-sm font-medium">{item.title}</p>
+                        <p className="mt-0.5 text-xs leading-relaxed text-muted-foreground">{item.text}</p>
+                      </div>
                     </div>
-                  </div>
-                ))}
+                  );
+                })}
               </div>
             </div>
 
             <div>
               <p className="text-xs font-semibold uppercase tracking-[0.18em] text-muted-foreground">
-                Catatan data
+                {landing.notes.eyebrow}
               </p>
               <h2 className="mt-2 text-3xl font-semibold tracking-[-0.04em] sm:text-4xl">
-                Yang perlu diketahui.
+                {landing.notes.title}
               </h2>
               <div className="mt-6 grid gap-3">
                 {loading ? (
@@ -259,7 +256,7 @@ export function LandingPage() {
         </section>
       </main>
 
-      <SiteFooter generatedAt={data?.generatedAt} />
+      <SiteFooter content={content} generatedAt={data?.generatedAt} />
     </div>
   );
 }

@@ -9,7 +9,7 @@ const PROJECT_ROOT = path.resolve(__dirname, '..');
 const SITE_DIR = path.join(PROJECT_ROOT, 'site');
 const DIST_DIR = path.join(PROJECT_ROOT, 'dist');
 
-const STATIC_DIRS = ['css', 'fonts', 'data'];
+const STATIC_DIRS = ['css', 'fonts', 'data', 'media'];
 const STATIC_FILES = ['favicon.svg', 'og-image.png', 'og-image.svg'];
 
 const MIME = {
@@ -99,6 +99,7 @@ export default defineConfig({
   resolve: {
     alias: {
       '@': path.resolve(__dirname, 'src'),
+      '@shared': path.resolve(PROJECT_ROOT, 'src'),
     },
   },
   build: {
@@ -118,5 +119,8 @@ export default defineConfig({
   server: {
     port: 5173,
     strictPort: true,
+    fs: {
+      allow: [PROJECT_ROOT],
+    },
   },
 });

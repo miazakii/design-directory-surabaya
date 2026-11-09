@@ -9,7 +9,8 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle, SheetTrigger } from '@/components/ui/sheet';
 import { Skeleton } from '@/components/ui/skeleton';
-import { useDirectory } from '@/hooks/use-directory';
+import { useDocumentMeta } from '@/hooks/use-document-meta';
+import { useSiteData } from '@/hooks/use-site-data';
 import { groupInfo, groupMap as buildGroupMap, hasContact, isVerified } from '@/lib/directory';
 
 const initialParams = new URLSearchParams(window.location.search);
@@ -43,7 +44,8 @@ function LoadingMap() {
 }
 
 export function MapPage() {
-  const { data, error, loading } = useDirectory();
+  const { data, content, error, loading } = useSiteData();
+  useDocumentMeta(content.seo.map, content.site.url);
   const studios = data?.studios ?? [];
   const groups = data?.groups ?? [];
   const minYears = Number(data?.minYears) || 2;
@@ -122,7 +124,7 @@ export function MapPage() {
     return (
       <div className="min-h-dvh">
         <header className="flex h-14 items-center border-b px-4">
-          <Brand compact />
+          <Brand content={content} compact />
         </header>
         <div className="container max-w-xl py-20">
           <Alert variant="destructive">
@@ -174,19 +176,21 @@ export function MapPage() {
                 selectedId={selectedId}
                 onSelect={handleSelect}
                 minYears={minYears}
+                showRatings={content.settings.showRatings}
+                showFoundedYear={content.settings.showFoundedYear}
               />
             </div>
           </SheetContent>
         </Sheet>
 
-        <Brand compact />
+        <Brand content={content} compact />
 
         <div className="ml-auto flex items-center gap-1.5">
           <Badge variant="outline" className="hidden rounded-full sm:inline-flex">
             {filtered.length} tampil
           </Badge>
           <Button asChild variant="ghost" size="sm" className="hidden rounded-full sm:inline-flex">
-            <a href="privacy.html">Privasi</a>
+            <a href="privacy.html">{content.map.privacyLabel || 'Privasi'}</a>
           </Button>
           <Button asChild variant="outline" size="sm" className="rounded-full">
             <a href="index.html">
@@ -213,6 +217,8 @@ export function MapPage() {
             selectedId={selectedId}
             onSelect={handleSelect}
             minYears={minYears}
+            showRatings={content.settings.showRatings}
+            showFoundedYear={content.settings.showFoundedYear}
           />
         </aside>
 
@@ -222,6 +228,8 @@ export function MapPage() {
             groups={groups}
             selectedStudio={selectedStudio}
             onSelect={handleMapSelect}
+            center={content.map.defaultCenter}
+            zoom={content.map.defaultZoom}
           />
           <div className="pointer-events-none absolute left-4 top-4 z-10 hidden sm:block">
             <div className="rounded-full border bg-background/90 px-3 py-1.5 text-xs shadow-sm backdrop-blur">
@@ -236,6 +244,8 @@ export function MapPage() {
         studio={selectedStudio}
         groups={groupMap}
         minYears={minYears}
+        showRatings={content.settings.showRatings}
+        showOpeningHours={content.settings.showOpeningHours}
         onOpenChange={(open) => {
           if (!open) setSelectedId(null);
         }}

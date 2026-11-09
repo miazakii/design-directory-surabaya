@@ -7,13 +7,11 @@ const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const ROOT = path.resolve(__dirname, '..', '..');
 const SITE_DIR = path.join(ROOT, 'site');
 const DATA_FILE = path.join(SITE_DIR, 'data', 'directory.json');
+const CONTENT_FILE = path.join(SITE_DIR, 'data', 'content.json');
 const OUT_DIR = path.resolve(ROOT, process.env.SEO_OUT_DIR || 'dist');
 const STUDIOS_DIR = path.join(OUT_DIR, 'studios');
-const SITE_URL = (
-  process.env.SITE_URL ||
-  process.env.URL ||
-  'https://miazakii.github.io/design-directory-surabaya'
-).replace(/\/$/, '');
+let SITE_URL = 'https://miazakii.github.io/design-directory-surabaya';
+let SITE_NAME = 'Design Directory Surabaya';
 
 function esc(value) {
   return String(value ?? '').replace(/[&<>"']/g, (char) => ({
@@ -68,7 +66,7 @@ function socialLinks(studio) {
 }
 
 function studioPage(studio, directory) {
-  const title = `${studio.name} — Design Directory Surabaya`;
+  const title = `${studio.name} — ${SITE_NAME}`;
   const address = String(studio.address || '').trim();
   const city = String(studio.city || '').trim();
   const citySuffix = city && !address.toLowerCase().includes(city.toLowerCase()) ? city : '';
@@ -158,7 +156,7 @@ function studioPage(studio, directory) {
   <a class="skip-link" href="#main">Lewati ke konten</a>
   <header class="landing-nav">
     <div class="container landing-nav__inner">
-      <a class="brand" href="../index.html">Design Directory <span>Surabaya</span></a>
+      <a class="brand" href="../index.html">${esc(SITE_NAME)}</a>
       <a class="btn btn--ghost" href="../map.html?studio=${encodeURIComponent(studio.id)}">Buka di Peta</a>
     </div>
   </header>
@@ -203,7 +201,7 @@ function studioPage(studio, directory) {
 
   <footer class="landing-footer">
     <div class="container" style="display:flex; justify-content:space-between; gap:16px; flex-wrap:wrap;">
-      <span>Design Directory Surabaya — referensi terbuka.</span>
+      <span>${esc(SITE_NAME)} — referensi terbuka.</span>
       <span><a href="../map.html" style="color:var(--muted);">Kembali ke direktori</a> · <a href="../privacy.html" style="color:var(--muted);">Privasi</a></span>
     </div>
   </footer>
@@ -214,6 +212,19 @@ function studioPage(studio, directory) {
 
 function main() {
   const directory = JSON.parse(fs.readFileSync(DATA_FILE, 'utf8'));
+  let content = {};
+  try {
+    content = JSON.parse(fs.readFileSync(CONTENT_FILE, 'utf8'));
+  } catch {
+    // content.json opsional untuk kompatibilitas.
+  }
+  SITE_URL = (
+    process.env.SITE_URL ||
+    process.env.URL ||
+    content.site?.url ||
+    'https://miazakii.github.io/design-directory-surabaya'
+  ).replace(/\/$/, '');
+  SITE_NAME = String(content.site?.name || 'Design Directory Surabaya').trim();
   const studios = Array.isArray(directory.studios) ? directory.studios : [];
   const lastmod = String(directory.generatedAt || new Date().toISOString()).slice(0, 10);
 

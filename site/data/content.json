@@ -1,0 +1,155 @@
+{
+  "version": 1,
+  "site": {
+    "name": "Design Directory Surabaya",
+    "shortName": "Design Directory",
+    "accent": "Surabaya",
+    "tagline": "Peta ekosistem desain Surabaya.",
+    "description": "Direktori terbuka yang memetakan studio, agensi, dan praktisi desain di Surabaya.",
+    "url": "https://miazakii.github.io/design-directory-surabaya",
+    "github": "https://github.com/miazakii/design-directory-surabaya",
+    "issueUrl": "https://github.com/miazakii/design-directory-surabaya/issues/new?template=koreksi-data.yml"
+  },
+  "navigation": [
+    { "label": "Peta", "href": "map.html" },
+    { "label": "Kategori", "href": "index.html#kategori" },
+    { "label": "Tentang", "href": "index.html#tentang" }
+  ],
+  "cta": {
+    "label": "Buka direktori",
+    "href": "map.html"
+  },
+  "landing": {
+    "hero": {
+      "kicker": "Direktori terbuka · Surabaya",
+      "title": "Peta ekosistem desain",
+      "highlight": "Surabaya.",
+      "description": "Studio, agensi, konsultan, dan praktisi desain dalam satu direktori yang bisa dicari, difilter, dan dibaca sebagai jaringan — bukan sekadar daftar.",
+      "primary": { "label": "Jelajahi peta", "href": "map.html" },
+      "secondary": { "label": "Lihat kategori", "href": "#kategori" }
+    },
+    "snapshot": {
+      "eyebrow": "Snapshot direktori",
+      "title": "Surabaya, dibaca lewat peta.",
+      "note": "Status usia adalah estimasi batas bawah aktivitas, bukan tanggal berdiri resmi. Data yang belum pasti tetap ditandai agar transparan."
+    },
+    "categories": {
+      "eyebrow": "Jelajahi",
+      "title": "Kategori",
+      "description": "Setiap kategori membawa warna dan konteksnya sendiri. Klik untuk membuka peta dengan filter yang sudah aktif."
+    },
+    "about": {
+      "eyebrow": "Tentang",
+      "title": "Komunitas desain dibaca sebagai jaringan.",
+      "body": "Studio, konsultan, biro iklan, dan praktisi tampil bersamaan sehingga pembaca bisa melihat posisi mereka, siapa yang berada di dekatnya, dan bagaimana ekosistem ini tersusun.",
+      "points": [
+        {
+          "title": "Cari & filter",
+          "text": "Temukan studio berdasarkan nama, kategori, atau lokasi."
+        },
+        {
+          "title": "Baca lewat peta",
+          "text": "Lihat sebaran dan kedekatan antar studio di Surabaya."
+        },
+        {
+          "title": "Transparan",
+          "text": "Data yang belum terverifikasi tetap ditandai, bukan dirapikan diam-diam."
+        }
+      ]
+    },
+    "notes": {
+      "eyebrow": "Catatan data",
+      "title": "Yang perlu diketahui."
+    }
+  },
+  "map": {
+    "title": "Peta · Design Directory Surabaya",
+    "description": "Peta interaktif 100 studio dan agensi desain di Surabaya.",
+    "defaultCenter": [112.745, -7.275],
+    "defaultZoom": 12,
+    "privacyLabel": "Privasi & disclaimer"
+  },
+  "privacy": {
+    "title": "Privasi & disclaimer",
+    "description": "Data disclaimer dan kebijakan privasi Design Directory Surabaya.",
+    "eyebrow": "Transparansi",
+    "intro": "Direktori ini adalah referensi terbuka. Kami berusaha menampilkan data yang berguna sekaligus jujur tentang batasannya.",
+    "principleTitle": "Prinsip kami",
+    "principleBody": "Lebih baik menampilkan data yang belum pasti dengan label jelas daripada menghapusnya diam-diam atau membuatnya terlihat lebih pasti dari yang sebenarnya.",
+    "sections": [
+      {
+        "title": "Sumber & akurasi data",
+        "paragraphs": [
+          "Data dalam direktori ini dikumpulkan dari halaman publik Google Maps (nama, kategori, alamat, kontak, rating, jam buka, dan koordinat) serta estimasi usia dari sinyal publik seperti arsip web, tanggal registrasi domain, copyright situs, dan review tertua.",
+          "Estimasi usia adalah batas bawah aktivitas, bukan tanggal berdiri resmi. Baris berstatus \"Perlu cek manual\" atau \"Tidak dapat dipastikan\" belum terverifikasi dan ditampilkan dengan penanda khusus."
+        ]
+      },
+      {
+        "title": "Informasi yang ditampilkan",
+        "paragraphs": [
+          "Kami menampilkan informasi usaha untuk keperluan referensi B2B: nama usaha, kategori, alamat, telepon, website, email, akun media sosial, rating, jam buka, dan estimasi tahun berdiri.",
+          "Kami tidak mengumpulkan atau menampilkan data anak, data keuangan pribadi, dokumen identitas, maupun data pribadi sensitif lainnya."
+        ]
+      },
+      {
+        "title": "Layanan pihak ketiga",
+        "paragraphs": [
+          "Peta memuat tile dari OpenFreeMap dan data peta OpenStreetMap. Permintaan teknis ke layanan tersebut dapat memproses alamat IP dan informasi perangkat sesuai kebijakan penyedia.",
+          "Font, skrip, dan aset antarmuka disajikan dari domain direktori ini. Tidak ada Google Fonts atau CDN eksternal untuk aset UI."
+        ]
+      },
+      {
+        "title": "Dasar privasi",
+        "paragraphs": [
+          "Pemrosesan informasi mengikuti Undang-Undang Pelindungan Data Pribadi No. 27 Tahun 2022 (UU PDP). Tampil di direktori ini tidak berarti usaha atau orang tersebut adalah klien, mitra, atau sponsor penyelenggara."
+        ]
+      },
+      {
+        "title": "Hak Anda",
+        "paragraphs": [
+          "Anda dapat meminta koreksi, pembatasan, penghapusan, atau keberatan atas informasi Anda kapan saja. Permintaan akan kami proses tanpa biaya."
+        ]
+      }
+    ],
+    "contact": {
+      "title": "Kontak",
+      "body": "Untuk koreksi atau penghapusan data, ajukan melalui formulir koreksi data. Sertakan nama studio dan detail perubahan. Kami akan menindaklanjuti melalui GitHub.",
+      "sensitive": "Jika permintaan bersifat sensitif, jangan cantumkan data pribadi di issue publik. Tulis bahwa Anda ingin dihubungi secara privat, lalu kami akan mengatur jalur komunikasi yang sesuai.",
+      "ctaLabel": "Ajukan koreksi data"
+    }
+  },
+  "seo": {
+    "home": {
+      "title": "Design Directory Surabaya",
+      "description": "Direktori terbuka yang memetakan 100 studio dan agensi desain di Surabaya.",
+      "ogImage": "og-image.png",
+      "canonical": "https://miazakii.github.io/design-directory-surabaya/"
+    },
+    "map": {
+      "title": "Peta · Design Directory Surabaya",
+      "description": "Peta interaktif 100 studio dan agensi desain di Surabaya.",
+      "ogImage": "og-image.png",
+      "canonical": "https://miazakii.github.io/design-directory-surabaya/map.html"
+    },
+    "privacy": {
+      "title": "Privasi & Disclaimer · Design Directory Surabaya",
+      "description": "Data disclaimer dan kebijakan privasi Design Directory Surabaya.",
+      "ogImage": "og-image.png",
+      "canonical": "https://miazakii.github.io/design-directory-surabaya/privacy.html"
+    }
+  },
+  "footer": {
+    "text": "Design Directory Surabaya — referensi terbuka.",
+    "description": "Referensi terbuka untuk memetakan studio, agensi, dan praktisi desain di Surabaya.",
+    "links": [
+      { "label": "Peta", "href": "map.html" },
+      { "label": "Privasi & disclaimer", "href": "privacy.html" },
+      { "label": "GitHub", "href": "https://github.com/miazakii/design-directory-surabaya" }
+    ]
+  },
+  "settings": {
+    "showRatings": true,
+    "showOpeningHours": true,
+    "showFoundedYear": true
+  }
+}

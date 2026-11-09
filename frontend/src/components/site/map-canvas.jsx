@@ -33,7 +33,15 @@ function featureCollection(studios, groups) {
   };
 }
 
-export function MapCanvas({ studios, groups, selectedStudio, onSelect, onError }) {
+export function MapCanvas({
+  studios,
+  groups,
+  selectedStudio,
+  onSelect,
+  onError,
+  center = MAP_CENTER,
+  zoom = MAP_ZOOM,
+}) {
   const containerRef = useRef(null);
   const mapRef = useRef(null);
   const loadedRef = useRef(false);
@@ -62,8 +70,8 @@ export function MapCanvas({ studios, groups, selectedStudio, onSelect, onError }
       map = new maplibregl.Map({
         container: containerRef.current,
         style: 'https://tiles.openfreemap.org/styles/positron',
-        center: MAP_CENTER,
-        zoom: MAP_ZOOM,
+        center,
+        zoom,
         maxZoom: 18,
         attributionControl: false,
       });
@@ -233,12 +241,18 @@ export function MapCanvas({ studios, groups, selectedStudio, onSelect, onError }
 
   useEffect(() => {
     const map = mapRef.current;
+    if (!map || !loadedRef.current) return;
+    map.jumpTo({ center, zoom });
+  }, [center, zoom]);
+
+  useEffect(() => {
+    const map = mapRef.current;
     if (!map || !loadedRef.current || !selectedStudio || !hasCoords(selectedStudio)) return;
     const target = [Number(selectedStudio.longitude), Number(selectedStudio.latitude)];
     const reduced = window.matchMedia?.('(prefers-reduced-motion: reduce)').matches ?? false;
     if (reduced) map.jumpTo({ center: target, zoom: 15 });
     else map.flyTo({ center: target, zoom: 15, duration: 900 });
-  }, [selectedStudio]);
+  }, [selectedStudio, center, zoom]);
 
   return (
     <div className="relative h-full w-full">
